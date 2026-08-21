@@ -2,11 +2,11 @@
 
 [![Flutter](https://img.shields.io/badge/Flutter-3.x-02569B?logo=flutter)](https://flutter.dev)
 [![Dart](https://img.shields.io/badge/Dart-3.12-0175C2?logo=dart)](https://dart.dev)
-[![Standard Readme compliant](<https://img.shields.io/badge/readme%20style-standard-brightgreen.svg?style=flat-square>)](https://github.com/richardlitt/standard-readme)
+[![Standard Readme compliant](https://img.shields.io/badge/readme%20style-standard-brightgreen.svg?style=flat-square)](https://github.com/richardlitt/standard-readme)
 
 > A local-first, offline Flutter application designed for dairy farmers to track herd lifecycles, monitor per-cow milk yields, and maintain customer sales ledgers without cloud dependency.
 
-This README reflects the current project status and is subject to updates as development progresses.
+This README reflects the current project status, adheres to the [Standard Readme](https://github.com/richardlitt/standard-readme) specification, and is subject to updates as development progresses.
 
 ## Table of Contents
 
@@ -15,13 +15,15 @@ This README reflects the current project status and is subject to updates as dev
 - [Install](#install)
 - [Usage](#usage)
 - [API](#api)
+  - [Project Structure & Directory Map](#project-structure--directory-map)
+  - [Core Modules & Providers](#core-modules--providers)
 - [Maintainers](#maintainers)
 - [Contributing](#contributing)
 - [License](#license)
 
 ## Security
 
-Farm Flow is built as a local-first application where user data resides on the device within a local SQLite database (`dairy_farm.db`).
+Farm Flow is built as a local-first application where user data resides on the device within a local SQLite database (`dairy_farm.db`). 
 
 - Local authentication credentials are encrypted using SHA-256 password hashing.
 - No sensitive farm or financial data is transmitted to external cloud servers.
@@ -32,7 +34,6 @@ Farm Flow is built as a local-first application where user data resides on the d
 Dairy farm management in rural environments requires reliable, real-time tracking of animal health, reproduction, milk yield performance, and buyer transactions. Many existing solutions rely on continuous internet access, which is often unavailable in agricultural areas.
 
 Farm Flow addresses this challenge by providing:
-
 - **Offline-First Storage**: A local SQLite database supporting mobile (Android/iOS), desktop (Windows/macOS/Linux via FFI), and web browsers (via WebAssembly/IndexedDB).
 - **Exact Unit Precision**: Storage of milk quantities in integer grams and monetary values in integer paise to eliminate floating-point rounding errors.
 - **Comprehensive Lifecycle Tracking**: Monitoring cows through milking, pregnancy (9-month timeline tracking), dry periods, heifers, and artificial insemination records.
@@ -52,17 +53,16 @@ Farm Flow addresses this challenge by providing:
 ### Setup Steps
 
 1. Clone the repository:
-
    ```sh
    git clone https://github.com/zainulabidin-codes/FARM-FLOW.git
    ```
-2. Change to the application directory:
 
+2. Change to the application directory:
    ```sh
    cd FARM-FLOW/dairy_farm_app
    ```
-3. Install dependencies:
 
+3. Install dependencies:
    ```sh
    flutter pub get
    ```
@@ -72,13 +72,11 @@ Farm Flow addresses this challenge by providing:
 ### Development Builds
 
 Run on the default target device or emulator:
-
 ```sh
 flutter run
 ```
 
 Run on specific platform targets:
-
 ```sh
 flutter run -d windows
 flutter run -d chrome
@@ -88,13 +86,11 @@ flutter run -d android
 ### Static Diagnostics & Tests
 
 Analyze the codebase for lint issues and errors:
-
 ```sh
 flutter analyze
 ```
 
 Run the automated unit and integration test suite:
-
 ```sh
 flutter test
 ```
@@ -102,7 +98,6 @@ flutter test
 ### App Icon Generation
 
 Regenerate platform launcher icons from asset source files:
-
 ```sh
 dart run flutter_launcher_icons
 ```
@@ -110,7 +105,6 @@ dart run flutter_launcher_icons
 ### Production Release Builds
 
 Build executable binaries for deployment:
-
 ```sh
 flutter build apk --release
 flutter build appbundle --release
@@ -119,6 +113,40 @@ flutter build web --release
 ```
 
 ## API
+
+### Project Structure & Directory Map
+
+The codebase follows a feature-first modular architecture separating infrastructure (`lib/core`) from features (`lib/features`):
+
+```
+dairy_farm_app/
+├── android/                   # Native Android platform configuration & manifests
+├── assets/                    # Static images, launcher icons, and brand logo
+├── ios/                       # Native iOS project configuration & assets
+├── lib/
+│   ├── main.dart              # MultiProvider bootstrap & platform FFI initialization
+│   ├── core/                  # Shared core infrastructure & design system
+│   │   ├── constants/         # AppStrings & UI constants
+│   │   ├── database/          # DatabaseHelper (SQLite FFI/Web engine & migrations v1-12)
+│   │   ├── presentation/      # Shared UI widgets & base components
+│   │   ├── routing/           # AppRouter navigation single source of truth
+│   │   ├── theme/             # AppTheme & AppColors design tokens
+│   │   └── utils/             # MoneyUtils, AppToast, PregnancyDisplayUtils
+│   └── features/              # Feature modules (Data + Presentation layers)
+│       ├── auth/              # Farmer authentication, AuthProvider, AuthRepository
+│       ├── cows/              # Herd tracking, CowMilkScreen, CowProvider, CowRepository
+│       ├── dashboard/         # Dashboard metrics & ActivityLogProvider
+│       ├── dodi_ledger/       # Dodi (Buyer) ledger, DodiDetailScreen, DodiProvider
+│       ├── milk_entry/        # Shift milk entry modal, conflict resolution dialog
+│       └── shell/             # AppShell bottom navigation controller
+├── linux/                     # Desktop Linux platform build files
+├── macos/                     # Desktop macOS platform build files
+├── test/                      # Unit, integration, and bug regression test suites
+├── web/                       # Web build target (IndexedDB WASM FFI)
+└── windows/                   # Desktop Windows platform build files
+```
+
+### Core Modules & Providers
 
 Farm Flow utilizes a feature-first architecture managed via `Provider`. Key core modules and APIs include:
 
