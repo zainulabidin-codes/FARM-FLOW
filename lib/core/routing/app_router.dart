@@ -10,7 +10,6 @@ import '../../features/milk_entry/presentation/providers/milk_entry_provider.dar
 import '../../features/milk_entry/data/models/ledger_entry_model.dart';
 import '../../features/dodi_ledger/presentation/providers/dodi_provider.dart';
 import '../../features/cows/presentation/providers/cow_provider.dart';
-import '../../features/cows/data/models/cow_model.dart';
 import '../../features/dashboard/presentation/providers/activity_log_provider.dart';
 import '../utils/app_toast.dart';
 import '../../features/milk_entry/presentation/utils/conflict_resolution_dialog.dart';
@@ -54,12 +53,11 @@ abstract final class AppRouter {
     }
 
     final cowProvider = Provider.of<CowProvider>(context, listen: false);
-    final cow = cowProvider.cows.firstWhere(
+    final cow = cowProvider.cows.where(
       (c) => c.id == cowId && c.isDeleted == 0,
-      orElse: () => const CowModel(userId: 0, tagNumber: ''),
-    );
+    ).firstOrNull;
 
-    if (cow.userId == 0) {
+    if (cow == null || cow.userId == 0) {
       if (context.mounted) {
         AppToast.showError(context, 'Cow not found or has been deleted.');
       }

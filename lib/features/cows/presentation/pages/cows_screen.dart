@@ -494,7 +494,8 @@ class _CowCard extends StatelessWidget {
                   splashRadius: 20,
                   onPressed: () {
                     final cowProvider = context.read<CowProvider>();
-                    final dbCow = cowProvider.cows.firstWhere((c) => c.id.toString() == cow.id);
+                    final dbCow = cowProvider.cows.where((c) => c.id.toString() == cow.id).firstOrNull;
+                    if (dbCow == null) return;
                     showModalBottomSheet(
                       context: context,
                       isScrollControlled: true,

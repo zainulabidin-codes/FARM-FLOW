@@ -88,10 +88,13 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
     if (index == 1) {
       if (_isMilkEntryOpen) return;
       _isMilkEntryOpen = true;
-      final result = await AppRouter.pushMilkEntry(context);
-      _isMilkEntryOpen = false;
-      if (result != null && mounted) {
-        setState(() => _currentIndex = result);
+      try {
+        final result = await AppRouter.pushMilkEntry(context);
+        if (result != null && mounted) {
+          setState(() => _currentIndex = result);
+        }
+      } finally {
+        _isMilkEntryOpen = false;
       }
       return;
     }
@@ -146,7 +149,8 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
     }
 
     final cowProvider = context.read<CowProvider>();
-    final cow = cowProvider.cows.firstWhere((c) => c.id == cowId);
+    final cow = cowProvider.cows.where((c) => c.id == cowId).firstOrNull;
+    if (cow == null) return;
     final cowName = (cow.name != null && cow.name!.trim().isNotEmpty) ? cow.name! : cow.tagNumber;
 
     final daysMated = cowProvider.getDaysSinceMating(cow);

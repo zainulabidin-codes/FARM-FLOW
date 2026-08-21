@@ -59,10 +59,8 @@ class CowProvider extends ChangeNotifier {
   List<CowModel> get heifers => _cows.where((c) => c.status == 'HEIFER').toList();
 
   bool hasLactated(int cowId) {
-    final cow = _cows.firstWhere(
-      (c) => c.id == cowId,
-      orElse: () => const CowModel(userId: 0, tagNumber: ''),
-    );
+    final cow = _cows.where((c) => c.id == cowId).firstOrNull;
+    if (cow == null) return false;
     return cow.hasLactatedBefore == 1;
   }
 
@@ -167,12 +165,9 @@ class CowProvider extends ChangeNotifier {
     try {
       await _repository.logDailyYield(cowId, date, morningGrams, eveningGrams);
       
-      final cow = _cows.firstWhere(
-        (c) => c.id == cowId,
-        orElse: () => const CowModel(userId: 0, tagNumber: 'Unknown'),
-      );
+      final cow = _cows.where((c) => c.id == cowId).firstOrNull;
       
-      if (cow.userId != 0) {
+      if (cow != null && cow.userId != 0) {
         String sessionStr = '';
         double totalKg = 0.0;
         if (morningGrams != null) {
@@ -323,7 +318,13 @@ class CowProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final currentCow = _cows.firstWhere((c) => c.id == cowId);
+      final currentCow = _cows.where((c) => c.id == cowId).firstOrNull;
+      if (currentCow == null) {
+        _errorMessage = 'Cow not found.';
+        _status = CowStatus.error;
+        notifyListeners();
+        return false;
+      }
       final newStatus = currentCow.status == 'HEIFER' ? 'BRED_HEIFER' : 'PREGNANT';
 
       await _repository.recordMating(
