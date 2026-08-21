@@ -6,7 +6,9 @@
 
 > A local-first, offline Flutter application designed for dairy farmers to track herd lifecycles, monitor per-cow milk yields, and maintain customer sales ledgers without cloud dependency.
 
-This README reflects the current project status, adheres to the [Standard Readme](https://github.com/richardlitt/standard-readme) specification, and is subject to updates as development progresses.
+This README reflects the current project status, adheres to the [Standard Readme](https://github.com/richardlitt/standard-readme) specification, and this application is under development and updates arrive wherever a new feature is implemented or a broken feature is fixed, so stay updated.
+
+* If want to contribute you are welcome.
 
 ## Table of Contents
 
