@@ -14,7 +14,7 @@ void main() {
     await databaseFactory.deleteDatabase(join(dbPath, 'dairy_farm.db'));
   });
 
-  testWidgets('Full app milk tab crash test', (tester) async {
+  testWidgets('Full app milk tab navigation E2E test', (tester) async {
     await tester.pumpWidget(const DairyFarmApp());
     await tester.pumpAndSettle();
     
@@ -39,16 +39,13 @@ void main() {
     await tester.pumpAndSettle();
     
     // Tap the Milk tab in the bottom nav bar
-    try {
-      final milkIcon = find.byIcon(Icons.water_drop_outlined);
-      if (milkIcon.evaluate().isNotEmpty) {
-        await tester.tap(milkIcon.first);
-        await tester.pumpAndSettle();
-        debugPrint('TAP SUCCEEDED, NO CRASH');
-      }
-    } catch (e, st) {
-      debugPrint('CAUGHT EXCEPTION DURING TAP: $e');
-      debugPrint('STACK TRACE:\n$st');
+    final milkIcon = find.byIcon(Icons.water_drop_outlined);
+    if (milkIcon.evaluate().isNotEmpty) {
+      await tester.tap(milkIcon.first);
+      await tester.pumpAndSettle();
     }
+
+    // Verify no unhandled exceptions were thrown
+    expect(tester.takeException(), isNull);
   });
 }

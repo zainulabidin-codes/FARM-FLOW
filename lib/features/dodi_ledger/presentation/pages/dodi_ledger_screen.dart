@@ -7,7 +7,7 @@ import '../../../../core/constants/app_strings.dart';
 import '../../../../core/utils/app_toast.dart';
 import '../../../../core/utils/money_utils.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
-import '../models.dart';
+import 'package:dairy_farm_app/features/dodi_ledger/data/models/dodi_model.dart';
 import '../providers/dodi_provider.dart';
 import '../widgets/dodi_card.dart';
 import 'dodi_detail_screen.dart';

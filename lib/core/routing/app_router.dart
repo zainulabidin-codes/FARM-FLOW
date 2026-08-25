@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import '../../features/auth/presentation/pages/auth_screen.dart';
 import '../../features/auth/presentation/pages/register_screen.dart';
 import '../../features/auth/presentation/providers/auth_provider.dart';
-import '../../features/shell/app_shell.dart';
+import 'package:dairy_farm_app/features/shell/presentation/pages/app_shell.dart';
 import '../../features/milk_entry/presentation/pages/milk_entry_screen.dart';
 import '../../features/milk_entry/presentation/providers/milk_entry_provider.dart';
 import '../../features/milk_entry/data/models/ledger_entry_model.dart';
@@ -12,7 +12,7 @@ import '../../features/dodi_ledger/presentation/providers/dodi_provider.dart';
 import '../../features/cows/presentation/providers/cow_provider.dart';
 import '../../features/dashboard/presentation/providers/activity_log_provider.dart';
 import '../utils/app_toast.dart';
-import '../../features/milk_entry/presentation/utils/conflict_resolution_dialog.dart';
+import 'package:dairy_farm_app/features/milk_entry/presentation/widgets/conflict_resolution_dialog.dart';
 
 // ---------------------------------------------------------------------------
 // AppRouter

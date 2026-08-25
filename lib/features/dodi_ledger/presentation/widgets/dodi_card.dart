@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/utils/money_utils.dart';
-import '../models.dart';
+import 'package:dairy_farm_app/features/dodi_ledger/data/models/dodi_model.dart';
 
 // ---------------------------------------------------------------------------
 // DodiCard

@@ -8,7 +8,7 @@ import 'package:dairy_farm_app/features/cows/presentation/providers/cow_provider
 import 'package:dairy_farm_app/features/dodi_ledger/presentation/providers/dodi_provider.dart';
 import 'package:dairy_farm_app/features/milk_entry/presentation/providers/milk_entry_provider.dart';
 import 'package:dairy_farm_app/features/dashboard/presentation/providers/activity_log_provider.dart';
-import 'package:dairy_farm_app/features/dashboard/presentation/utils/dashboard_refresh_coordinator.dart';
+import 'package:dairy_farm_app/features/dashboard/presentation/providers/dashboard_refresh_coordinator.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 void main() {

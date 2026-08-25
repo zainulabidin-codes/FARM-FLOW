@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:dairy_farm_app/features/shell/app_shell.dart';
+import 'package:dairy_farm_app/features/shell/presentation/pages/app_shell.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:dairy_farm_app/features/auth/presentation/providers/auth_provider.dart';

@@ -6,6 +6,7 @@
 
 > A local-first, offline Flutter application designed for dairy farmers to track herd lifecycles, monitor per-cow milk yields, and maintain customer sales ledgers without cloud dependency.
 
+<<<<<<< HEAD
 This README reflects the current project status, adheres to the [Standard Readme](https://github.com/richardlitt/standard-readme) specification, and this application is under development and updates arrive wherever a new feature is implemented or a broken feature is fixed, so stay updated.
 
 * If want to contribute you are welcome.
@@ -23,6 +24,23 @@ This README reflects the current project status, adheres to the [Standard Readme
 - [Contributing](#contributing)
 - [License](#license)
 
+=======
+This README reflects the current project status, adheres to the [Standard Readme](https://github.com/richardlitt/standard-readme) specification, and is subject to updates as development progresses.
+
+## Table of Contents
+
+- [Security](#security)
+- [Background](#background)
+- [Install](#install)
+- [Usage](#usage)
+- [API](#api)
+  - [Project Structure & Directory Map](#project-structure--directory-map)
+  - [Core Modules & Providers](#core-modules--providers)
+- [Maintainers](#maintainers)
+- [Contributing](#contributing)
+- [License](#license)
+
+>>>>>>> 448c942 (some structural changes)
 ## Security
 
 Farm Flow is built as a local-first application where user data resides on the device within a local SQLite database (`dairy_farm.db`). 
@@ -121,7 +139,11 @@ flutter build web --release
 The codebase follows a feature-first modular architecture separating infrastructure (`lib/core`) from features (`lib/features`):
 
 ```
+<<<<<<< HEAD
 dairy_farm_app/
+=======
+dairy_farm_app/                # Flutter Project Root
+>>>>>>> 448c942 (some structural changes)
 ├── android/                   # Native Android platform configuration & manifests
 ├── assets/                    # Static images, launcher icons, and brand logo
 ├── ios/                       # Native iOS project configuration & assets
@@ -130,6 +152,7 @@ dairy_farm_app/
 │   ├── core/                  # Shared core infrastructure & design system
 │   │   ├── constants/         # AppStrings & UI constants
 │   │   ├── database/          # DatabaseHelper (SQLite FFI/Web engine & migrations v1-12)
+<<<<<<< HEAD
 │   │   ├── presentation/      # Shared UI widgets & base components
 │   │   ├── routing/           # AppRouter navigation single source of truth
 │   │   ├── theme/             # AppTheme & AppColors design tokens
@@ -144,6 +167,25 @@ dairy_farm_app/
 ├── linux/                     # Desktop Linux platform build files
 ├── macos/                     # Desktop macOS platform build files
 ├── test/                      # Unit, integration, and bug regression test suites
+=======
+│   │   ├── routing/           # AppRouter navigation single source of truth
+│   │   ├── theme/             # AppTheme & AppColors design tokens
+│   │   └── utils/             # MoneyUtils, AppToast, PregnancyDisplayUtils
+│   └── features/              # Feature modules (Clean Architecture: Data + Presentation)
+│       ├── auth/              # Farmer authentication, AuthProvider, AuthRepository
+│       ├── cows/              # Herd tracking, CowUiModel, CowProvider, CowRepository
+│       ├── dashboard/         # Dashboard metrics, ActivityLogProvider, DashboardRefreshCoordinator
+│       ├── dodi_ledger/       # Dodi (Buyer) ledger, DodiDetailScreen, DodiProvider, DodiModel
+│       ├── milk_entry/        # Shift milk entry modal, custom numpad, conflict resolution dialog
+│       └── shell/             # AppShell bottom navigation controller (presentation/pages/app_shell.dart)
+├── linux/                     # Desktop Linux platform build files
+├── macos/                     # Desktop macOS platform build files
+├── test/                      # Categorized automated test suites & helpers
+│   ├── e2e/                   # End-to-end integration test suites (milk_crash_e2e_test.dart)
+│   ├── helpers/               # Non-executing database helper tools (clear_db_tool.dart, clear_tables_tool.dart)
+│   ├── unit/                  # Unit test suites (cow_lifecycle_test.dart, dodi_logic_test.dart, money_utils_test.dart)
+│   └── widget/                # Widget test suites (milk_crash_widget_test.dart, phase3_navigation_refresh_test.dart)
+>>>>>>> 448c942 (some structural changes)
 ├── web/                       # Web build target (IndexedDB WASM FFI)
 └── windows/                   # Desktop Windows platform build files
 ```

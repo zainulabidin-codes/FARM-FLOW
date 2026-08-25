@@ -5,7 +5,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/utils/app_toast.dart';
 import '../../../../core/utils/pregnancy_display_utils.dart';
-import '../models.dart';
+import '../models/cow_ui_model.dart';
 import 'log_yields_screen.dart';
 import 'package:provider/provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
@@ -31,7 +31,7 @@ class CowsScreen extends StatefulWidget {
   /// Full herd list. The screen displays a filtered subset based on
   /// [widget.selectedFilter]; the parent is responsible for passing the correct
   /// filtered list or the full list (filtering can be done either side).
-  final List<CowModel> cows;
+  final List<CowUiModel> cows;
 
   /// Currently active filter, e.g. "All", "Milking", "Pregnant", "Dry".
   /// Must match one of the values in [AppStrings.filterAll/Milking/…].
@@ -85,7 +85,7 @@ class _CowsScreenState extends State<CowsScreen> {
     super.dispose();
   }
 
-  List<CowModel> _getVisibleCows(BuildContext context) {
+  List<CowUiModel> _getVisibleCows(BuildContext context) {
     if (widget.cows.isEmpty) return [];
     
     var filtered = widget.cows;
@@ -401,13 +401,13 @@ class _FilterChip extends StatelessWidget {
 
 // ---------------------------------------------------------------------------
 // _CowCard
-// Adapts its internal layout based on [CowModel.status]:
+// Adapts its internal layout based on [CowUiModel.status]:
 //   CowStatus.pregnant → _PregnancyDetails
 //   CowStatus.milking  → _MilkingDetails
 //   CowStatus.dry      → _DryDetails
 // ---------------------------------------------------------------------------
 class _CowCard extends StatelessWidget {
-  final CowModel cow;
+  final CowUiModel cow;
   final VoidCallback onTap;
   final VoidCallback onLongPress;
 
@@ -577,7 +577,7 @@ class _StatusBadge extends StatelessWidget {
 // "Month X of 9" on the left and a care-stage label on the right.
 // ---------------------------------------------------------------------------
 class _PregnancyDetails extends StatefulWidget {
-  final CowModel cow;
+  final CowUiModel cow;
   const _PregnancyDetails({required this.cow});
 
   @override
@@ -873,7 +873,7 @@ class _PregnancyDetailsState extends State<_PregnancyDetails> {
 // Sub-card: yield + lactation info line.
 // ---------------------------------------------------------------------------
 class _MilkingDetails extends StatefulWidget {
-  final CowModel cow;
+  final CowUiModel cow;
 
   const _MilkingDetails({required this.cow});
 
@@ -1152,7 +1152,7 @@ class _MilkingDetailsState extends State<_MilkingDetails> {
 // Minimal content for a dry cow — just a status line, no progress bar.
 // ---------------------------------------------------------------------------
 class _DryDetails extends StatelessWidget {
-  final CowModel cow;
+  final CowUiModel cow;
   const _DryDetails({required this.cow});
 
   @override
@@ -1463,7 +1463,7 @@ class _NavItem extends StatelessWidget {
 // Minimal content for a heifer — not yet pregnant.
 // ---------------------------------------------------------------------------
 class _HeiferDetails extends StatefulWidget {
-  final CowModel cow;
+  final CowUiModel cow;
   const _HeiferDetails({required this.cow});
 
   @override

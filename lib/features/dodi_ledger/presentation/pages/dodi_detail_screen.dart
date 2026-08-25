@@ -11,7 +11,7 @@ import '../../data/models/dodi_model.dart';
 import '../../presentation/providers/dodi_provider.dart';
 import '../../../milk_entry/data/models/ledger_entry_model.dart';
 import '../../../milk_entry/presentation/providers/milk_entry_provider.dart';
-import '../../../milk_entry/presentation/utils/conflict_resolution_dialog.dart';
+import 'package:dairy_farm_app/features/milk_entry/presentation/widgets/conflict_resolution_dialog.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../dashboard/presentation/providers/activity_log_provider.dart';
 import '../../../../core/constants/app_strings.dart';

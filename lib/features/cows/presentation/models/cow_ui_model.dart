@@ -25,7 +25,7 @@ extension CowStatusLabel on CowStatus {
 }
 
 /// Represents a single cow shown in the herd tracker screen.
-class CowModel {
+class CowUiModel {
   /// Unique identifier — used in tap / navigation callbacks.
   final String id;
 
@@ -79,7 +79,7 @@ class CowModel {
   /// The advancing age string calculated from estimatedBirthDate.
   final String? displayAge;
 
-  const CowModel({
+  const CowUiModel({
     required this.id,
     required this.tagNumber,
     required this.name,

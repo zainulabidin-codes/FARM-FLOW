@@ -4,23 +4,23 @@ import 'package:flutter_native_contact_picker/flutter_native_contact_picker.dart
 import 'package:flutter_native_contact_picker/model/contact.dart';
 import 'package:provider/provider.dart';
 
-import '../../core/constants/app_strings.dart';
-import '../../core/theme/app_theme.dart';
-import '../../core/utils/app_toast.dart';
-import '../../core/utils/money_utils.dart';
-import '../auth/presentation/providers/auth_provider.dart';
-import '../cows/presentation/providers/cow_provider.dart';
-import '../cows/presentation/pages/cows_screen.dart';
-import '../cows/presentation/widgets/cow_age_picker.dart';
-import '../cows/presentation/models.dart' as ui_models;
-import '../dashboard/presentation/pages/dashboard_screen.dart';
-import '../dashboard/presentation/pages/activity_log_screen.dart';
-import '../dodi_ledger/presentation/pages/dodi_ledger_screen.dart';
-import '../dodi_ledger/presentation/pages/dodi_detail_screen.dart';
-import '../dodi_ledger/presentation/providers/dodi_provider.dart';
-import '../milk_entry/presentation/providers/milk_entry_provider.dart';
-import '../../core/routing/app_router.dart';
-import '../dashboard/presentation/utils/dashboard_refresh_coordinator.dart';
+import 'package:dairy_farm_app/core/constants/app_strings.dart';
+import 'package:dairy_farm_app/core/theme/app_theme.dart';
+import 'package:dairy_farm_app/core/utils/app_toast.dart';
+import 'package:dairy_farm_app/core/utils/money_utils.dart';
+import 'package:dairy_farm_app/features/auth/presentation/providers/auth_provider.dart';
+import 'package:dairy_farm_app/features/cows/presentation/providers/cow_provider.dart';
+import 'package:dairy_farm_app/features/cows/presentation/pages/cows_screen.dart';
+import 'package:dairy_farm_app/features/cows/presentation/widgets/cow_age_picker.dart';
+import 'package:dairy_farm_app/features/cows/presentation/models/cow_ui_model.dart' as ui_models;
+import 'package:dairy_farm_app/features/dashboard/presentation/pages/dashboard_screen.dart';
+import 'package:dairy_farm_app/features/dashboard/presentation/pages/activity_log_screen.dart';
+import 'package:dairy_farm_app/features/dodi_ledger/presentation/pages/dodi_ledger_screen.dart';
+import 'package:dairy_farm_app/features/dodi_ledger/presentation/pages/dodi_detail_screen.dart';
+import 'package:dairy_farm_app/features/dodi_ledger/presentation/providers/dodi_provider.dart';
+import 'package:dairy_farm_app/features/milk_entry/presentation/providers/milk_entry_provider.dart';
+import 'package:dairy_farm_app/core/routing/app_router.dart';
+import 'package:dairy_farm_app/features/dashboard/presentation/providers/dashboard_refresh_coordinator.dart';
 
 // ---------------------------------------------------------------------------
 // AppShell
@@ -34,7 +34,7 @@ import '../dashboard/presentation/utils/dashboard_refresh_coordinator.dart';
 // modal via the [onMilkEntryTap] callback.
 // ---------------------------------------------------------------------------
 
-import '../dashboard/presentation/providers/activity_log_provider.dart';
+import 'package:dairy_farm_app/features/dashboard/presentation/providers/activity_log_provider.dart';
 
 class AppShell extends StatefulWidget {
   /// The DB primary key of the currently logged-in farmer.
@@ -426,7 +426,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
           onNavTap: _onNavTap,
         ),
       3 => CowsScreen(
-          cows: cowProvider.cows.map((c) => ui_models.CowModel(
+          cows: cowProvider.cows.map((c) => ui_models.CowUiModel(
             id: c.id?.toString() ?? '',
             tagNumber: c.tagNumber,
             name: c.name ?? 'Cow #${c.tagNumber}',
