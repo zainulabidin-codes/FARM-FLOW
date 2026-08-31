@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:dairy_farm_app/core/database/database_helper.dart';
-import 'package:dairy_farm_app/core/utils/pregnancy_display_utils.dart';
+import 'package:dairy_farm_app/features/cows/presentation/utils/pregnancy_display_utils.dart';
 import 'package:dairy_farm_app/features/cows/data/datasources/cow_local_datasource.dart';
 import 'package:dairy_farm_app/features/cows/data/repositories/cow_repository.dart';
 

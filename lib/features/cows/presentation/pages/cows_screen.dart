@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/utils/app_toast.dart';
-import '../../../../core/utils/pregnancy_display_utils.dart';
+import '../utils/pregnancy_display_utils.dart';
 import '../models/cow_ui_model.dart';
 import 'log_yields_screen.dart';
 import 'package:provider/provider.dart';
