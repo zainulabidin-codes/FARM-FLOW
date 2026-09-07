@@ -119,6 +119,9 @@ class CowLocalDatasource {
     String? deliveryDate,
     required int hasLactatedBefore,
     String? estimatedBirthDate,
+    int isPregnancyConfirmed = 0,
+    String? confirmationDate,
+    String? confirmationMethod,
   }) async {
     final Database db = await DatabaseHelper.instance.database;
     await db.transaction((txn) async {
@@ -132,6 +135,9 @@ class CowLocalDatasource {
           'delivery_date': deliveryDate,
           'has_lactated_before': hasLactatedBefore,
           'estimated_birth_date': estimatedBirthDate,
+          'is_pregnancy_confirmed': isPregnancyConfirmed,
+          'confirmation_date': confirmationDate,
+          'confirmation_method': confirmationMethod,
         },
         where: 'id = ?',
         whereArgs: [cowId],
@@ -155,11 +161,63 @@ class CowLocalDatasource {
           'mating_date': matingDate,
           'delivery_date': deliveryDate,
           'status': newStatus,
+          'is_pregnancy_confirmed': 0,
+          'confirmation_date': null,
+          'confirmation_method': null,
         },
         where: 'id = ?',
         whereArgs: [cowId],
       );
       await transitionCowLifecycle(txn, cowId: cowId, newStatus: newStatus);
+    });
+  }
+
+  /// Confirms pregnancy transactional operation.
+  /// Derives target status (BRED_HEIFER if has_lactated_before == 0, PREGNANT if 1),
+  /// sets is_pregnancy_confirmed = 1, confirmation_date, confirmation_method,
+  /// and executes transitionCowLifecycle.
+  Future<Map<String, String>> confirmPregnancy({
+    required int cowId,
+    required String confirmationDate,
+    required String method,
+  }) async {
+    final Database db = await DatabaseHelper.instance.database;
+    return await db.transaction((txn) async {
+      final rows = await txn.query(
+        'cows',
+        columns: ['has_lactated_before', 'is_pregnancy_confirmed', 'confirmation_method'],
+        where: 'id = ?',
+        whereArgs: [cowId],
+      );
+      if (rows.isEmpty) throw Exception('Cow not found.');
+
+      final row = rows.first;
+      final hasLactated = (row['has_lactated_before'] as int?) ?? 0;
+      final isConfirmed = (row['is_pregnancy_confirmed'] as int?) ?? 0;
+      final oldMethod = row['confirmation_method'] as String?;
+
+      // Gap 1: Target status derivation based on has_lactated_before
+      final targetStatus = (hasLactated == 1) ? 'PREGNANT' : 'BRED_HEIFER';
+
+      await txn.update(
+        'cows',
+        {
+          'status': targetStatus,
+          'is_pregnancy_confirmed': 1,
+          'confirmation_date': confirmationDate,
+          'confirmation_method': method,
+        },
+        where: 'id = ?',
+        whereArgs: [cowId],
+      );
+
+      await transitionCowLifecycle(txn, cowId: cowId, newStatus: targetStatus);
+
+      return {
+        'targetStatus': targetStatus,
+        'isFirstConfirmation': (isConfirmed == 0) ? 'true' : 'false',
+        'oldMethod': oldMethod ?? 'NONE',
+      };
     });
   }
 

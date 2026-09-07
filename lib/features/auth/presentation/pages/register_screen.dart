@@ -76,7 +76,9 @@ class _RegisterScreenState extends State<RegisterScreen>
   }
 
   void _handleSignup() {
-    HapticFeedback.lightImpact();
+    try {
+      HapticFeedback.lightImpact();
+    } catch (_) {}
     widget.onSignupTap(
       _usernameController.text.trim(),
       _passwordController.text,

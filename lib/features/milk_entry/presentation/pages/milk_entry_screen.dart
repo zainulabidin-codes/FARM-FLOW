@@ -189,7 +189,7 @@ class _MilkEntryScreenState extends State<MilkEntryScreen> {
     final dodiProvider = Provider.of<DodiProvider>(context, listen: false);
     final selectedDodi = dodiProvider.dodis.where((d) => d.id == _selectedDodiId).firstOrNull;
 
-    HapticFeedback.mediumImpact();
+    try { HapticFeedback.mediumImpact(); } catch (_) {}
     final tag = _loadTagController.text.trim().isEmpty ? 'Load 1' : _loadTagController.text.trim();
     widget.onSaveEntry(
       _selectedDodiId!,
@@ -344,7 +344,7 @@ class _MilkEntryScreenState extends State<MilkEntryScreen> {
         _SessionToggle(
           selected: _session,
           onChanged: (s) {
-            HapticFeedback.selectionClick();
+            try { HapticFeedback.selectionClick(); } catch (_) {}
             setState(() => _session = s);
           },
         ),
@@ -385,7 +385,7 @@ class _MilkEntryAppBar extends StatelessWidget implements PreferredSizeWidget {
         child: GestureDetector(
           behavior: HitTestBehavior.opaque,
           onTap: () {
-            HapticFeedback.lightImpact();
+            try { HapticFeedback.lightImpact(); } catch (_) {}
             FocusScope.of(context).unfocus();
             if (ModalRoute.of(context)?.isCurrent == true) {
               Navigator.of(context).pop();

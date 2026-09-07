@@ -12,6 +12,7 @@ enum CowStatus {
   dry,
   heifer,
   bredHeifer,
+  pendingConfirmation,
 }
 
 extension CowStatusLabel on CowStatus {
@@ -21,6 +22,7 @@ extension CowStatusLabel on CowStatus {
         CowStatus.dry => 'Dry',
         CowStatus.heifer => 'Heifer',
         CowStatus.bredHeifer => 'Bred Heifer',
+        CowStatus.pendingConfirmation => 'Pending Confirmation',
       };
 }
 

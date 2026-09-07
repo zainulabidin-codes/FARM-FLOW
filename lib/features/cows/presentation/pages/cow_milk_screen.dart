@@ -147,7 +147,7 @@ class _CowMilkScreenState extends State<CowMilkScreen> {
                               _buildHeader(),
                                 const SizedBox(height: 24),
                                 _buildSeasonSummary(),
-                                if (_cow!.status == 'MILKING' || _cow!.status == 'PREGNANT') ...[
+                                if (_cow!.status == 'MILKING' || _cow!.status == 'PREGNANT' || (_cow!.status == 'PENDING_CONFIRMATION' && _cow!.hasLactatedBefore == 1)) ...[
                                   const SizedBox(height: 24),
                                   _buildEntryForm(),
                                 ],

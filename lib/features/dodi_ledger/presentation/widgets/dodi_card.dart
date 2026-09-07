@@ -39,11 +39,11 @@ class DodiCard extends StatelessWidget {
 
     return GestureDetector(
       onTap: () {
-        HapticFeedback.selectionClick();
+        try { HapticFeedback.selectionClick(); } catch (_) {}
         onTap(dodi.id!.toString());
       },
       onLongPress: onLongPress != null ? () {
-        HapticFeedback.heavyImpact();
+        try { HapticFeedback.heavyImpact(); } catch (_) {}
         onLongPress!(dodi.id!.toString());
       } : null,
       child: Container(

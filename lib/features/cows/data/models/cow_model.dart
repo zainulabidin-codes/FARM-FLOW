@@ -26,6 +26,9 @@ class CowModel {
   final String? deletedReason;
   final String? deletedDate;
   final int hasLactatedBefore;
+  final int isPregnancyConfirmed;
+  final String? confirmationDate;
+  final String? confirmationMethod;
 
   // Additional fields for displaying derived yields
   final int? peakMorningYield;
@@ -46,6 +49,9 @@ class CowModel {
     this.deletedReason,
     this.deletedDate,
     this.hasLactatedBefore = 0,
+    this.isPregnancyConfirmed = 0,
+    this.confirmationDate,
+    this.confirmationMethod,
     this.peakMorningYield,
     this.peakEveningYield,
     this.lowestMorningYield,
@@ -68,6 +74,9 @@ class CowModel {
       deletedReason: map['deleted_reason'] as String?,
       deletedDate: map['deleted_date'] as String?,
       hasLactatedBefore: (map['has_lactated_before'] as int?) ?? 0,
+      isPregnancyConfirmed: (map['is_pregnancy_confirmed'] as int?) ?? 0,
+      confirmationDate: map['confirmation_date'] as String?,
+      confirmationMethod: map['confirmation_method'] as String?,
       peakMorningYield: map['peak_morning_yield'] as int?,
       peakEveningYield: map['peak_evening_yield'] as int?,
       lowestMorningYield: map['lowest_morning_yield'] as int?,
@@ -89,6 +98,9 @@ class CowModel {
       'deleted_reason': deletedReason,
       'deleted_date': deletedDate,
       'has_lactated_before': hasLactatedBefore,
+      'is_pregnancy_confirmed': isPregnancyConfirmed,
+      'confirmation_date': confirmationDate,
+      'confirmation_method': confirmationMethod,
     };
   }
 

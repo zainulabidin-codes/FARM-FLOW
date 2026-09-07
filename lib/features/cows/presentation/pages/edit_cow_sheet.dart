@@ -93,7 +93,7 @@ class _EditCowSheetState extends State<EditCowSheet> {
         calculatedFlag = 1; // Preserve locked status
       }
     } else {
-      calculatedFlag = (_selectedStatus == 'MILKING' || _selectedStatus == 'PREGNANT' || _selectedStatus == 'DRY') ? 1 : 0;
+      calculatedFlag = (_selectedStatus == 'MILKING' || _selectedStatus == 'PREGNANT') ? 1 : 0;
     }
 
     final success = await cowProvider.updateCowGeneral(

@@ -45,6 +45,8 @@ class CowProvider extends ChangeNotifier {
   int get dryCount => _cows.where((c) => c.isDeleted == 0 && c.status == 'DRY').length;
   int get bredHeiferCount => _cows.where((c) => c.isDeleted == 0 && c.status == 'BRED_HEIFER').length;
   int get heiferCount => _cows.where((c) => c.isDeleted == 0 && c.status == 'HEIFER').length;
+  int get pendingConfirmationCount => _cows.where((c) => c.isDeleted == 0 && c.status == 'PENDING_CONFIRMATION').length;
+  List<CowModel> get pendingConfirmationCows => _cows.where((c) => c.isDeleted == 0 && c.status == 'PENDING_CONFIRMATION').toList();
 
   List<CowModel> get pregnantCows => _cows.where((c) => c.status == 'PREGNANT' || c.status == 'BRED_HEIFER').toList();
   List<CowModel> get dryCows =>
@@ -70,7 +72,7 @@ class CowProvider extends ChangeNotifier {
         // STRICT FIREWALL: Must have lactated at least once in her lifetime!
         if (c.hasLactatedBefore != 1) return false;
 
-        if (c.status == 'MILKING') return true;
+        if (c.status == 'MILKING' || c.status == 'PENDING_CONFIRMATION') return true;
         if (c.status == 'PREGNANT') {
           final days = getDaysSinceMating(c);
           if (days != null && days < 211) return true;
@@ -82,14 +84,7 @@ class CowProvider extends ChangeNotifier {
   bool get isRollupRunning => _isRollupRunning;
 
   int? getDaysSinceMating(CowModel cow) {
-    if (cow.matingDate == null || cow.matingDate!.isEmpty) return null;
-    try {
-      final date = DateTime.parse(cow.matingDate!);
-      final days = DateTime.now().difference(date).inDays;
-      return days < 0 ? 0 : days;
-    } catch (_) {
-      return null;
-    }
+    return _repository.getDaysSinceMating(cow.matingDate);
   }
 
   int getPregnancyMonth(CowModel cow) {
@@ -208,6 +203,48 @@ class CowProvider extends ChangeNotifier {
     }
   }
 
+  Future<bool> _runAutoConfirmSweep(int userId, List<CowModel> baseCows) async {
+    bool didConfirmAny = false;
+    final now = DateTime.now();
+    final todayStr =
+        "${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
+
+    for (final cow in baseCows) {
+      if (cow.isDeleted == 0 && cow.status == 'PENDING_CONFIRMATION') {
+        final days = getDaysSinceMating(cow);
+        if (days != null && days >= 29) {
+          final result = await _repository.confirmPregnancy(
+            cowId: cow.id!,
+            confirmationDate: todayStr,
+            method: 'AUTO',
+          );
+
+          final label = (cow.name?.isNotEmpty == true) ? cow.name! : cow.tagNumber;
+          final targetStatus = result['targetStatus']!;
+
+          await _activityRepo.logActivity(
+            ActivityLogModel(
+              userId: userId,
+              title: 'Pregnancy Confirmed',
+              subtitle: '$label — Confirmed by AUTO',
+              value: '$targetStatus (AUTO)',
+              timeUnix: now.millisecondsSinceEpoch,
+              iconCode: Icons.favorite.codePoint,
+              isPositive: 1,
+              metadata: {
+                'name': cow.name,
+                'tag': cow.tagNumber,
+                'method': 'AUTO',
+              },
+            ),
+          );
+          didConfirmAny = true;
+        }
+      }
+    }
+    return didConfirmAny;
+  }
+
   Future<void> loadCows(int userId) async {
     await fetchCows(userId);
   }
@@ -217,11 +254,18 @@ class CowProvider extends ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
     try {
-      final baseCows = await _repository.getAllCows(userId);
+      var baseCows = await _repository.getAllCows(userId);
+
+      final didAutoConfirm = await _runAutoConfirmSweep(userId, baseCows);
+      if (didAutoConfirm) {
+        baseCows = await _repository.getAllCows(userId);
+      }
 
       final List<CowModel> updatedCows = [];
       for (final cow in baseCows) {
-        if (cow.status == 'MILKING' || (cow.status == 'PREGNANT' && getDaysSinceMating(cow) != null && getDaysSinceMating(cow)! < 211)) {
+        if (cow.status == 'MILKING' ||
+            (cow.status == 'PREGNANT' && getDaysSinceMating(cow) != null && getDaysSinceMating(cow)! < 211) ||
+            (cow.status == 'PENDING_CONFIRMATION' && cow.hasLactatedBefore == 1)) {
           final yields = await _repository.getSeasonSessionYields(cow.id!);
           
           updatedCows.add(CowModel(
@@ -233,6 +277,9 @@ class CowProvider extends ChangeNotifier {
             matingDate: cow.matingDate,
             deliveryDate: cow.deliveryDate,
             hasLactatedBefore: cow.hasLactatedBefore,
+            isPregnancyConfirmed: cow.isPregnancyConfirmed,
+            confirmationDate: cow.confirmationDate,
+            confirmationMethod: cow.confirmationMethod,
             isDeleted: cow.isDeleted,
             deletedReason: cow.deletedReason,
             deletedDate: cow.deletedDate,
@@ -325,23 +372,27 @@ class CowProvider extends ChangeNotifier {
         notifyListeners();
         return false;
       }
-      final newStatus = currentCow.status == 'HEIFER' ? 'BRED_HEIFER' : 'PREGNANT';
-
       await _repository.recordMating(
         cowId: cowId, 
         matingDateString: matingDate,
-        newStatus: newStatus,
+        newStatus: 'PENDING_CONFIRMATION',
       );
       
+      final label = (currentCow.name?.isNotEmpty == true) ? currentCow.name! : currentCow.tagNumber;
       await _activityRepo.logActivity(
         ActivityLogModel(
           userId: userId,
           title: 'Mating Recorded',
-          subtitle: cowName,
-          value: matingDate,
+          subtitle: '$label — Mating Recorded (Awaiting Confirmation)',
+          value: '$matingDate (Pending Confirmation)',
           timeUnix: DateTime.now().millisecondsSinceEpoch,
           iconCode: Icons.favorite.codePoint,
           isPositive: 1,
+          metadata: {
+            'name': currentCow.name,
+            'tag': currentCow.tagNumber,
+            'status': 'PENDING_CONFIRMATION',
+          },
         ),
       );
 
@@ -482,7 +533,7 @@ class CowProvider extends ChangeNotifier {
     }
   }
 
-  /// Ends pregnancy due to mid-term loss / abortion and reverts animal to MILKING status.
+  /// Ends pregnancy due to mid-term loss / abortion and reverts animal status.
   Future<bool> endPregnancy(int cowId, int userId) async {
     _status = CowStatus.loading;
     _errorMessage = null;
@@ -491,29 +542,40 @@ class CowProvider extends ChangeNotifier {
     try {
       final cow = _cows.where((c) => c.id == cowId).firstOrNull;
       final label = (cow?.name?.isNotEmpty == true) ? cow!.name! : (cow?.tagNumber ?? 'Cow');
+      final resetStatus = (cow?.hasLactatedBefore == 1) ? 'MILKING' : 'HEIFER';
+      final lactatedFlag = (cow?.hasLactatedBefore == 1) ? 1 : 0;
 
       await _repository.updateCowGeneral(
         cowId: cowId,
         name: cow?.name ?? '',
         tagNumber: cow?.tagNumber ?? '',
-        status: 'MILKING',
+        status: resetStatus,
         matingDate: null,
-        hasLactatedBefore: 1, // Mid-term loss triggers lactation -> automatically MILKING
+        deliveryDate: null,
+        hasLactatedBefore: lactatedFlag,
         estimatedBirthDate: cow?.estimatedBirthDate,
+        isPregnancyConfirmed: 0,
+        confirmationDate: null,
+        confirmationMethod: null,
       );
+
+      final subtitleStr = (resetStatus == 'MILKING')
+          ? '$label — Mid-term loss logged (Reverted to Milking)'
+          : '$label — Mid-term loss logged (Reverted to Heifer)';
 
       await _activityRepo.logActivity(
         ActivityLogModel(
           userId: userId,
           title: 'Pregnancy Ended',
-          subtitle: label,
-          value: 'Mid-term loss logged (Reverted to Milking)',
+          subtitle: subtitleStr,
+          value: 'Mid-term loss logged (Reverted to $resetStatus)',
           timeUnix: DateTime.now().millisecondsSinceEpoch,
           iconCode: Icons.warning_amber_rounded.codePoint,
           isPositive: 0,
           metadata: {
             'name': cow?.name,
             'tag': cow?.tagNumber,
+            'revertedStatus': resetStatus,
           },
         ),
       );
@@ -528,42 +590,74 @@ class CowProvider extends ChangeNotifier {
     }
   }
 
-  /// Confirms pregnancy post-mating.
-  Future<bool> confirmPregnancy(int cowId, int userId) async {
+  /// Confirms pregnancy post-mating via repository transactional operation.
+  /// Accepts optional [confirmationDate] (defaults to today) and [method] (defaults to 'SELF').
+  Future<bool> confirmPregnancy(
+    int cowId,
+    int userId, {
+    String? confirmationDate,
+    String method = 'SELF',
+  }) async {
     _status = CowStatus.loading;
     _errorMessage = null;
     notifyListeners();
 
     try {
+      final now = DateTime.now();
+      final dateStr = confirmationDate ??
+          "${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
+
+      final result = await _repository.confirmPregnancy(
+        cowId: cowId,
+        confirmationDate: dateStr,
+        method: method,
+      );
+
       final cow = _cows.where((c) => c.id == cowId).firstOrNull;
       final label = (cow?.name?.isNotEmpty == true) ? cow!.name! : (cow?.tagNumber ?? 'Cow');
-      final newStatus = (cow?.status == 'HEIFER' || cow?.status == 'BRED_HEIFER') ? 'BRED_HEIFER' : 'PREGNANT';
+      final isFirst = result['isFirstConfirmation'] == 'true';
+      final oldMethod = result['oldMethod']!;
+      final targetStatus = result['targetStatus']!;
 
-      await _repository.updateCowGeneral(
-        cowId: cowId,
-        name: cow?.name ?? '',
-        tagNumber: cow?.tagNumber ?? '',
-        status: newStatus,
-        matingDate: cow?.matingDate,
-        hasLactatedBefore: cow?.hasLactatedBefore ?? 0,
-        estimatedBirthDate: cow?.estimatedBirthDate,
-      );
-
-      await _activityRepo.logActivity(
-        ActivityLogModel(
-          userId: userId,
-          title: 'Pregnancy Confirmed',
-          subtitle: label,
-          value: newStatus == 'BRED_HEIFER' ? 'Bred Heifer' : 'Confirmed Pregnant',
-          timeUnix: DateTime.now().millisecondsSinceEpoch,
-          iconCode: Icons.favorite.codePoint,
-          isPositive: 1,
-          metadata: {
-            'name': cow?.name,
-            'tag': cow?.tagNumber,
-          },
-        ),
-      );
+      // Gap 3 & Gap 4: Activity logging with No-Op Guard
+      if (isFirst) {
+        await _activityRepo.logActivity(
+          ActivityLogModel(
+            userId: userId,
+            title: 'Pregnancy Confirmed',
+            subtitle: '$label — Confirmed by $method',
+            value: '$targetStatus ($method)',
+            timeUnix: DateTime.now().millisecondsSinceEpoch,
+            iconCode: Icons.favorite.codePoint,
+            isPositive: 1,
+            metadata: {
+              'name': cow?.name,
+              'tag': cow?.tagNumber,
+              'method': method,
+            },
+          ),
+        );
+      } else if (oldMethod != method) {
+        // Real method override (e.g. AUTO -> VET)
+        await _activityRepo.logActivity(
+          ActivityLogModel(
+            userId: userId,
+            title: 'Confirmation Method Updated',
+            subtitle: '$label — Updated from $oldMethod to $method',
+            value: 'Method Override ($oldMethod → $method)',
+            timeUnix: DateTime.now().millisecondsSinceEpoch,
+            iconCode: Icons.edit_note_rounded.codePoint,
+            isPositive: 1,
+            metadata: {
+              'name': cow?.name,
+              'tag': cow?.tagNumber,
+              'oldMethod': oldMethod,
+              'newMethod': method,
+            },
+          ),
+        );
+      }
+      // Gap 4 No-Op Guard: If oldMethod == method on re-call, skip duplicate log.
 
       await fetchCows(userId);
       return true;

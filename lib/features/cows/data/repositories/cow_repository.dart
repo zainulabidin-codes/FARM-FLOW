@@ -59,6 +59,9 @@ class CowRepository {
       matingDate: cow.matingDate,
       deliveryDate: cow.deliveryDate,
       hasLactatedBefore: cow.hasLactatedBefore,
+      isPregnancyConfirmed: cow.isPregnancyConfirmed,
+      confirmationDate: cow.confirmationDate,
+      confirmationMethod: cow.confirmationMethod,
       estimatedBirthDate: cow.estimatedBirthDate,
       isDeleted: cow.isDeleted,
       deletedReason: cow.deletedReason,
@@ -88,15 +91,19 @@ class CowRepository {
     required String tagNumber,
     required String status,
     String? matingDate,
+    String? deliveryDate,
     required int hasLactatedBefore,
     String? estimatedBirthDate,
+    int isPregnancyConfirmed = 0,
+    String? confirmationDate,
+    String? confirmationMethod,
   }) async {
-    String? deliveryDate;
-    if (matingDate != null && matingDate.isNotEmpty) {
+    String? computedDeliveryDate = deliveryDate;
+    if (deliveryDate == null && matingDate != null && matingDate.isNotEmpty) {
       try {
         final parsed = DateTime.parse(matingDate);
         final delivery = parsed.add(const Duration(days: _gestationDays));
-        deliveryDate = "${delivery.year.toString().padLeft(4, '0')}-${delivery.month.toString().padLeft(2, '0')}-${delivery.day.toString().padLeft(2, '0')}";
+        computedDeliveryDate = "${delivery.year.toString().padLeft(4, '0')}-${delivery.month.toString().padLeft(2, '0')}-${delivery.day.toString().padLeft(2, '0')}";
       } catch (e) {
         // ignore parsing errors
       }
@@ -108,9 +115,12 @@ class CowRepository {
       tagNumber: tagNumber,
       status: status,
       matingDate: matingDate,
-      deliveryDate: deliveryDate,
+      deliveryDate: computedDeliveryDate,
       hasLactatedBefore: hasLactatedBefore,
       estimatedBirthDate: estimatedBirthDate,
+      isPregnancyConfirmed: isPregnancyConfirmed,
+      confirmationDate: confirmationDate,
+      confirmationMethod: confirmationMethod,
     );
   }
 
@@ -122,11 +132,12 @@ class CowRepository {
   ///   delivery_date = mating_date + [_gestationDays] (283 days) days.
   ///   Cow status is set to 'PREGNANT' automatically.
   ///
-  /// [matingDateString] must be ISO-8601 format: "YYYY-MM-DD".
+  /// Records a mating event for [cowId].
+  /// Sets initial status to 'PENDING_CONFIRMATION'.
   Future<void> recordMating({
     required int cowId,
     required String matingDateString,
-    required String newStatus,
+    String newStatus = 'PENDING_CONFIRMATION',
   }) async {
     final DateTime matingDate = DateTime.parse(matingDateString);
     final DateTime deliveryDate = matingDate.add(
@@ -142,6 +153,19 @@ class CowRepository {
       matingDate: matingDateString,
       deliveryDate: deliveryDateString,
       newStatus: newStatus,
+    );
+  }
+
+  /// Confirms pregnancy post-mating via datasource transactional method.
+  Future<Map<String, String>> confirmPregnancy({
+    required int cowId,
+    required String confirmationDate,
+    required String method,
+  }) async {
+    return _datasource.confirmPregnancy(
+      cowId: cowId,
+      confirmationDate: confirmationDate,
+      method: method,
     );
   }
 
@@ -168,15 +192,21 @@ class CowRepository {
   // --- Pregnancy month calculation -------------------------------------------
 
   /// Returns the number of days since mating, or null if no valid date.
-  /// No floats are stored - this is a pure in-memory computation.
-  int? getDaysSinceMating(String? matingDateString) {
+  /// Normalizes both dates to local midnight (00:00:00) to eliminate time-of-day drift.
+  /// Optional [now] allows deterministic testing across midnight boundaries.
+  int? getDaysSinceMating(String? matingDateString, {DateTime? now}) {
     if (matingDateString == null || matingDateString.isEmpty) return null;
+    try {
+      final DateTime matingDate = DateTime.parse(matingDateString);
+      final DateTime currentTime = now ?? DateTime.now();
+      final DateTime todayMidnight = DateTime(currentTime.year, currentTime.month, currentTime.day);
+      final DateTime matingMidnight = DateTime(matingDate.year, matingDate.month, matingDate.day);
 
-    final DateTime matingDate = DateTime.parse(matingDateString);
-    final DateTime today = DateTime.now();
-
-    final int daysSinceMating = today.difference(matingDate).inDays;
-    return daysSinceMating < 0 ? 0 : daysSinceMating;
+      final int daysSinceMating = todayMidnight.difference(matingMidnight).inDays;
+      return daysSinceMating < 0 ? 0 : daysSinceMating;
+    } catch (_) {
+      return null;
+    }
   }
 
   /// Calculates the current month of pregnancy (1-9) based on matingDate.
@@ -203,11 +233,17 @@ class CowRepository {
   /// Returns 0 if the delivery date has already passed.
   int? getDaysUntilDelivery(String? deliveryDateString) {
     if (deliveryDateString == null || deliveryDateString.isEmpty) return null;
+    try {
+      final DateTime deliveryDate = DateTime.parse(deliveryDateString);
+      final DateTime now = DateTime.now();
+      final DateTime todayMidnight = DateTime(now.year, now.month, now.day);
+      final DateTime deliveryMidnight = DateTime(deliveryDate.year, deliveryDate.month, deliveryDate.day);
 
-    final DateTime deliveryDate = DateTime.parse(deliveryDateString);
-    final DateTime today = DateTime.now();
-    final int days = deliveryDate.difference(today).inDays;
-    return days < 0 ? 0 : days;
+      final int days = deliveryMidnight.difference(todayMidnight).inDays;
+      return days < 0 ? 0 : days;
+    } catch (_) {
+      return null;
+    }
   }
 
   // --- Yield Logging ---

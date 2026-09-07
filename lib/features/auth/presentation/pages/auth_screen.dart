@@ -77,7 +77,9 @@ class _AuthScreenState extends State<AuthScreen>
   }
 
   void _handleLogin() {
-    HapticFeedback.lightImpact();
+    try {
+      HapticFeedback.lightImpact();
+    } catch (_) {}
     widget.onLoginTap(
       _usernameController.text.trim(),
       _passwordController.text,
@@ -85,7 +87,9 @@ class _AuthScreenState extends State<AuthScreen>
   }
 
   void _handleSignup() {
-    HapticFeedback.lightImpact();
+    try {
+      HapticFeedback.lightImpact();
+    } catch (_) {}
     widget.onSignupTap();
   }
 

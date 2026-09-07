@@ -111,7 +111,7 @@ class CustomNumpad extends StatelessWidget {
             return _NumpadButton(
               numpadKey: key,
               onTap: () {
-                HapticFeedback.lightImpact();
+                try { HapticFeedback.lightImpact(); } catch (_) {}
                 onKeyTap(key);
               },
             );

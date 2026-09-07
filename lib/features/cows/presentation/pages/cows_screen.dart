@@ -176,7 +176,7 @@ class _CowsScreenState extends State<CowsScreen> {
                             _IconCircleButton(
                               icon: Icons.water_drop,
                               onTap: () {
-                                HapticFeedback.mediumImpact();
+                                try { HapticFeedback.mediumImpact(); } catch (_) {}
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(builder: (_) => const LogYieldsScreen()),
@@ -198,7 +198,7 @@ class _CowsScreenState extends State<CowsScreen> {
                             _IconCircleButton(
                               icon: Icons.add,
                               onTap: () {
-                                HapticFeedback.mediumImpact();
+                                try { HapticFeedback.mediumImpact(); } catch (_) {}
                                 widget.onAddCowTap();
                               },
                               filled: true,
@@ -236,11 +236,11 @@ class _CowsScreenState extends State<CowsScreen> {
                         return _CowCard(
                           cow: cow,
                           onTap: () {
-                            HapticFeedback.selectionClick();
+                            try { HapticFeedback.selectionClick(); } catch (_) {}
                             widget.onCowCardTap(cow.id);
                           },
                           onLongPress: () {
-                            HapticFeedback.heavyImpact();
+                            try { HapticFeedback.heavyImpact(); } catch (_) {}
                             widget.onCowCardLongPress(cow.id);
                           },
                         );
@@ -337,7 +337,7 @@ class _FilterChipRow extends StatelessWidget {
               label: filter,
               isSelected: isSelected,
               onTap: () {
-                HapticFeedback.selectionClick();
+                try { HapticFeedback.selectionClick(); } catch (_) {}
                 onChanged(filter);
               },
             ),
@@ -517,6 +517,7 @@ class _CowCard extends StatelessWidget {
                 case CowStatus.dry: return _DryDetails(cow: cow);
                 case CowStatus.heifer: return _HeiferDetails(cow: cow);
                 case CowStatus.bredHeifer: return _PregnancyDetails(cow: cow);
+                case CowStatus.pendingConfirmation: return _PendingConfirmationDetails(cow: cow);
               }
             })(),
           ],
@@ -540,6 +541,7 @@ class _StatusBadge extends StatelessWidget {
         CowStatus.dry => AppColors.dryGrey,
         CowStatus.heifer => AppColors.sageTint,
         CowStatus.bredHeifer => AppColors.pregnantAmber,
+        CowStatus.pendingConfirmation => const Color(0xFFFFF3E0),
       };
 
   Color get _textColor => switch (status) {
@@ -548,6 +550,7 @@ class _StatusBadge extends StatelessWidget {
         CowStatus.dry => AppColors.dryGreyText,
         CowStatus.heifer => AppColors.deepGreen,
         CowStatus.bredHeifer => AppColors.pregnantAmberText,
+        CowStatus.pendingConfirmation => const Color(0xFFE65100),
       };
 
   @override
@@ -1583,6 +1586,118 @@ class _HeiferDetailsState extends State<_HeiferDetails> {
           ),
         ],
       ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// _PendingConfirmationDetails
+// Sub-card: Observation progress line + Tier-1 Quick Confirmation Button.
+// ---------------------------------------------------------------------------
+class _PendingConfirmationDetails extends StatefulWidget {
+  final CowUiModel cow;
+
+  const _PendingConfirmationDetails({required this.cow});
+
+  @override
+  State<_PendingConfirmationDetails> createState() => _PendingConfirmationDetailsState();
+}
+
+class _PendingConfirmationDetailsState extends State<_PendingConfirmationDetails> {
+  bool _isConfirming = false;
+
+  void _handleConfirmPregnancy() async {
+    final cowIdInt = int.tryParse(widget.cow.id);
+    if (cowIdInt == null) return;
+
+    final cowProvider = context.read<CowProvider>();
+    final cowModel = cowProvider.cows.where((c) => c.id == cowIdInt).firstOrNull;
+    if (cowModel == null) return;
+
+    setState(() => _isConfirming = true);
+    try {
+      final success = await cowProvider.confirmPregnancy(
+        cowIdInt,
+        cowModel.userId,
+        method: 'SELF',
+      );
+
+      if (mounted) {
+        if (success) {
+          AppToast.showSuccess(context, '✅ Pregnancy confirmed for Cow #${widget.cow.name}!');
+        } else {
+          AppToast.showError(context, cowProvider.errorMessage ?? 'Failed to confirm pregnancy.');
+        }
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isConfirming = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final days = widget.cow.daysSinceMating ?? 0;
+    final gestationDay = days + 1;
+    final isConfirmable = gestationDay >= 21 && gestationDay <= 28;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFFF3E0),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFFFB74D)),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.hourglass_empty_rounded, color: Color(0xFFE65100), size: 20),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Mating Recorded • Day $gestationDay of 28 (Observation Window)',
+                  style: const TextStyle(
+                    color: Color(0xFFE65100),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (isConfirmable) ...[
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.deepGreen,
+                foregroundColor: AppColors.cardWhite,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              icon: _isConfirming
+                  ? const SizedBox.shrink()
+                  : const Icon(Icons.favorite_rounded, size: 20),
+              label: _isConfirming
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.cardWhite),
+                    )
+                  : const Text('Confirm Pregnancy', style: TextStyle(fontWeight: FontWeight.w600)),
+              onPressed: _isConfirming ? null : _handleConfirmPregnancy,
+            ),
+          ),
+        ],
+      ],
     );
   }
 }

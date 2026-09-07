@@ -18,7 +18,7 @@ class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._internal();
 
   static const String _databaseName = 'dairy_farm.db';
-  static const int _databaseVersion = 12;
+  static const int _databaseVersion = 13;
 
   Database? _database;
 
@@ -201,6 +201,11 @@ class DatabaseHelper {
     if (oldVersion < 12) {
       await db.execute('ALTER TABLE ledger ADD COLUMN load_tag TEXT');
     }
+    if (oldVersion < 13) {
+      await db.execute('ALTER TABLE cows ADD COLUMN is_pregnancy_confirmed INTEGER NOT NULL DEFAULT 0');
+      await db.execute('ALTER TABLE cows ADD COLUMN confirmation_date TEXT');
+      await db.execute('ALTER TABLE cows ADD COLUMN confirmation_method TEXT');
+    }
   }
 
   /// Creates all tables on first run.
@@ -297,6 +302,9 @@ class DatabaseHelper {
         deleted_date  TEXT,
         has_lactated_before INTEGER DEFAULT 0,
         estimated_birth_date TEXT,
+        is_pregnancy_confirmed INTEGER NOT NULL DEFAULT 0,
+        confirmation_date TEXT,
+        confirmation_method TEXT,
         FOREIGN KEY (user_id) REFERENCES users(id)
       )
     ''');

@@ -421,7 +421,7 @@ class _AddBuyerButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        HapticFeedback.mediumImpact();
+        try { HapticFeedback.mediumImpact(); } catch (_) {}
         onTap();
       },
       child: Container(

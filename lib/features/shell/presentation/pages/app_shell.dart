@@ -48,10 +48,11 @@ class AppShell extends StatefulWidget {
   });
 
   @override
-  State<AppShell> createState() => _AppShellState();
+  State<AppShell> createState() => AppShellState();
 }
 
-class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
+class AppShellState extends State<AppShell> with WidgetsBindingObserver {
+  void onCowCardLongPress(String cowIdStr) => _onCowCardLongPress(cowIdStr);
   late int _currentIndex;
   String _cowsFilter = AppStrings.filterAll;
   bool _isMilkEntryOpen = false;
@@ -99,7 +100,9 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
       return;
     }
     if (index == _currentIndex) return;
-    HapticFeedback.selectionClick();
+    try {
+      HapticFeedback.selectionClick();
+    } catch (_) {}
     setState(() => _currentIndex = index);
   }
 
@@ -153,14 +156,13 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
     if (cow == null) return;
     final cowName = (cow.name != null && cow.name!.trim().isNotEmpty) ? cow.name! : cow.tagNumber;
 
-    final daysMated = cowProvider.getDaysSinceMating(cow);
     final bool isConfirmedPregnant = cow.status == 'PREGNANT' ||
-        (cow.status == 'BRED_HEIFER' && (daysMated ?? 0) > 23) ||
-        (cow.status == 'DRY' && cow.matingDate != null && (daysMated ?? 0) > 23);
+        cow.status == 'BRED_HEIFER' ||
+        (cow.status == 'DRY' && cow.matingDate != null && cow.matingDate!.isNotEmpty);
 
-    final bool isUnconfirmedMating = cow.matingDate != null && (daysMated ?? 0) <= 23;
+    final bool isPendingConfirmation = cow.status == 'PENDING_CONFIRMATION';
 
-    if (!isConfirmedPregnant && !isUnconfirmedMating) {
+    if (!isConfirmedPregnant && !isPendingConfirmation) {
       showDialog(
         context: context,
         builder: (ctx) => _DeleteCowDialog(
@@ -198,18 +200,19 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
             Text(
               isConfirmedPregnant
                   ? 'Select an action for this confirmed pregnant cow:'
-                  : 'Select an action for this mated cow (0–23 days):',
+                  : 'Select an action for this pending confirmation cow:',
               style: const TextStyle(color: AppColors.textDark, fontSize: 14, fontWeight: FontWeight.w500),
             ),
             const SizedBox(height: 16),
-            if (isConfirmedPregnant)
+            if (isConfirmedPregnant) ...[
+              // End Pregnancy (Mid-Term Loss)
               InkWell(
                 onTap: () async {
                   Navigator.of(ctx).pop();
                   final success = await cowProvider.endPregnancy(cowId, widget.userId);
                   if (mounted) {
                     if (success) {
-                      AppToast.showSuccess(context, '⚠️ Pregnancy ended for Cow #$cowName. Reverted to Milking status.');
+                      AppToast.showSuccess(context, '⚠️ Pregnancy ended for Cow #$cowName.');
                     } else {
                       AppToast.showError(context, cowProvider.errorMessage ?? 'Failed to end pregnancy.');
                     }
@@ -237,7 +240,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
                             ),
                             SizedBox(height: 2),
                             Text(
-                              'Logs mid-term loss / abortion and automatically reverts cow back to Milking status.',
+                              'Logs mid-term loss / abortion and automatically reverts cow status.',
                               style: TextStyle(color: AppColors.textDark, fontSize: 12),
                             ),
                           ],
@@ -246,15 +249,94 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
                     ],
                   ),
                 ),
-              )
-            else
+              ),
+              const SizedBox(height: 12),
+              // Override Confirmation Method
+              InkWell(
+                onTap: () {
+                  Navigator.of(ctx).pop();
+                  _showMethodSelectionDialog(context, cowId, cowName, cow.confirmationMethod ?? 'AUTO');
+                },
+                borderRadius: BorderRadius.circular(16),
+                child: Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE8F5E9),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: const Color(0xFF81C784)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.edit_note_rounded, color: AppColors.deepGreen, size: 24),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Override Confirmation Method',
+                              style: TextStyle(color: AppColors.deepGreen, fontWeight: FontWeight.bold, fontSize: 15),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Currently: ${cow.confirmationMethod ?? "AUTO"} — Change method to Vet or Self.',
+                              style: const TextStyle(color: AppColors.textDark, fontSize: 12),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ] else if (isPendingConfirmation) ...[
+              // Confirm Pregnancy
+              InkWell(
+                onTap: () {
+                  Navigator.of(ctx).pop();
+                  _showMethodSelectionDialog(context, cowId, cowName, 'SELF');
+                },
+                borderRadius: BorderRadius.circular(16),
+                child: Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE8F5E9),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: const Color(0xFF81C784)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.favorite_rounded, color: AppColors.deepGreen, size: 24),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: const [
+                            Text(
+                              'Confirm Pregnancy',
+                              style: TextStyle(color: AppColors.deepGreen, fontWeight: FontWeight.bold, fontSize: 15),
+                            ),
+                            SizedBox(height: 2),
+                            Text(
+                              'Confirm pregnancy post-mating via Self or Vet confirmation.',
+                              style: TextStyle(color: AppColors.textDark, fontSize: 12),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              // Heat Repeated / Cancel Mating
               InkWell(
                 onTap: () async {
                   Navigator.of(ctx).pop();
                   final success = await cowProvider.reportHeatRepeated(cowId, widget.userId);
                   if (mounted) {
                     if (success) {
-                      AppToast.showSuccess(context, '🔄 Heat repeated logged for Cow #$cowName. Reset status.');
+                      AppToast.showSuccess(context, '🔄 Heat repeated logged for Cow #$cowName.');
                     } else {
                       AppToast.showError(context, cowProvider.errorMessage ?? 'Failed to update mating.');
                     }
@@ -292,14 +374,15 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
                   ),
                 ),
               ),
+            ],
             const SizedBox(height: 12),
-            // Option 2: Remove / Delete Cow
+            // Option: Remove / Delete Cow
             InkWell(
               onTap: () {
                 Navigator.of(ctx).pop();
                 showDialog(
                   context: context,
-                  builder: (ctx2) => _DeleteCowDialog(
+                  builder: (ctx) => _DeleteCowDialog(
                     cowId: cowId,
                     cowName: cowName,
                   ),
@@ -314,7 +397,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
                 decoration: BoxDecoration(
                   color: const Color(0xFFFFEBEE),
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.warningRed.withValues(alpha: 0.3)),
+                  border: Border.all(color: const Color(0xFFFFCDD2)),
                 ),
                 child: Row(
                   children: [
@@ -330,7 +413,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
                           ),
                           SizedBox(height: 2),
                           Text(
-                            'Remove cow from active herd due to sale, death, or cull.',
+                            'Soft deletes cow record from herd tracker.',
                             style: TextStyle(color: AppColors.textDark, fontSize: 12),
                           ),
                         ],
@@ -339,6 +422,76 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
                   ],
                 ),
               ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showMethodSelectionDialog(BuildContext context, int cowId, String cowName, String currentMethod) {
+    String selectedMethod = (currentMethod == 'VET' || currentMethod == 'SELF') ? currentMethod : 'VET';
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setStateDialog) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Text('Confirmation Method — Cow #$cowName'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Current Method: $currentMethod', style: const TextStyle(fontWeight: FontWeight.w600, color: AppColors.textGrey)),
+              const SizedBox(height: 16),
+              const Text('Select confirmation method:', style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        backgroundColor: selectedMethod == 'SELF' ? AppColors.sageTint : Colors.transparent,
+                        side: BorderSide(color: selectedMethod == 'SELF' ? AppColors.deepGreen : Colors.grey),
+                      ),
+                      onPressed: () => setStateDialog(() => selectedMethod = 'SELF'),
+                      child: const Text('Self Confirmed', style: TextStyle(color: AppColors.deepGreen, fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        backgroundColor: selectedMethod == 'VET' ? AppColors.sageTint : Colors.transparent,
+                        side: BorderSide(color: selectedMethod == 'VET' ? AppColors.deepGreen : Colors.grey),
+                      ),
+                      onPressed: () => setStateDialog(() => selectedMethod = 'VET'),
+                      child: const Text('Vet Confirmed', style: TextStyle(color: AppColors.deepGreen, fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.deepGreen, foregroundColor: Colors.white),
+              onPressed: () async {
+                Navigator.of(ctx).pop();
+                final cowProvider = context.read<CowProvider>();
+                final success = await cowProvider.confirmPregnancy(cowId, widget.userId, method: selectedMethod);
+                if (mounted) {
+                  if (success) {
+                    AppToast.showSuccess(context, '✅ Pregnancy confirmed ($selectedMethod) for Cow #$cowName.');
+                  } else {
+                    AppToast.showError(context, cowProvider.errorMessage ?? 'Failed to confirm pregnancy.');
+                  }
+                }
+              },
+              child: const Text('Save Method'),
             ),
           ],
         ),
@@ -438,7 +591,9 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
                           ? ui_models.CowStatus.bredHeifer
                           : c.status.toUpperCase() == 'PREGNANT'
                               ? ui_models.CowStatus.pregnant
-                              : ui_models.CowStatus.milking,
+                              : c.status.toUpperCase() == 'PENDING_CONFIRMATION'
+                                  ? ui_models.CowStatus.pendingConfirmation
+                                  : ui_models.CowStatus.milking,
             hasLactated: cowProvider.hasLactated(c.id!),
             aiDate: c.matingDate,
             pregnancyMonth: cowProvider.getPregnancyMonth(c),
@@ -722,8 +877,18 @@ class _AddCowSheetState extends State<_AddCowSheet> {
   final _formKey = GlobalKey<FormState>();
   final _tagController = TextEditingController();
   final _nameController = TextEditingController();
+  
+  // Question 1: Has she given birth before? (1 = Yes / Adult, 0 = No / Heifer)
+  int _hasLactatedBefore = 1;
+  // Question 2: Selected state ('MILKING', 'PREGNANT', 'DRY', 'HEIFER', 'BRED_HEIFER')
   String _selectedStatus = 'MILKING';
+  
+  // Gestation input mode: 'DATE' (Calendar) vs 'AGE' (Wheel picker)
+  String _gestationInputMode = 'DATE';
   DateTime? _matingDate;
+  int _gestationMonth = 1;
+  int _gestationDay = 0;
+
   bool _saving = false;
   String? _tagError;
   int _ageYears = 0;
@@ -737,19 +902,54 @@ class _AddCowSheetState extends State<_AddCowSheet> {
     super.dispose();
   }
 
+  void _onLactationChanged(int value) {
+    setState(() {
+      _hasLactatedBefore = value;
+      if (value == 1) {
+        if (_selectedStatus == 'HEIFER' || _selectedStatus == 'BRED_HEIFER') {
+          _selectedStatus = 'MILKING';
+        }
+      } else {
+        if (_selectedStatus == 'MILKING' || _selectedStatus == 'PREGNANT') {
+          _selectedStatus = 'HEIFER';
+        } else if (_selectedStatus == 'DRY') {
+          // Stays DRY (Dry Heifer)
+        }
+      }
+      if (!isPregnantOrDry) {
+        _matingDate = null;
+      }
+    });
+  }
+
+  bool get isPregnantOrDry =>
+      _selectedStatus == 'PREGNANT' ||
+      _selectedStatus == 'BRED_HEIFER' ||
+      _selectedStatus == 'DRY';
+
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
-    if ((_selectedStatus == 'PREGNANT' || _selectedStatus == 'DRY') && _matingDate == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Mating Date is required for pregnant cows.'),
-          backgroundColor: AppColors.warningRed,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          margin: const EdgeInsets.all(16),
-        ),
-      );
-      return;
+
+    DateTime? finalMatingDate = _matingDate;
+    int isConfirmed = 0;
+    String? method;
+
+    if (isPregnantOrDry) {
+      if (_gestationInputMode == 'AGE') {
+        // Mode 2: Calculate from Gestation Age Wheel Picker
+        final double exactDays = ((_gestationMonth - 1) * 30.44) + (_gestationDay > 0 ? _gestationDay - 1 : 0);
+        final int elapsedDays = exactDays.round();
+        final now = DateTime.now();
+        final todayMidnight = DateTime(now.year, now.month, now.day);
+        finalMatingDate = todayMidnight.subtract(Duration(days: elapsedDays));
+        isConfirmed = 1;
+        method = 'VET';
+      } else if (finalMatingDate == null) {
+        AppToast.showError(context, 'Please select a Mating Date or Gestation Age.');
+        return;
+      }
+    } else {
+      finalMatingDate = null;
     }
 
     final tagText = _tagController.text.trim();
@@ -772,13 +972,17 @@ class _AddCowSheetState extends State<_AddCowSheet> {
       estimatedBirthDateStr = "${birthDate.year.toString().padLeft(4, '0')}-${birthDate.month.toString().padLeft(2, '0')}-${birthDate.day.toString().padLeft(2, '0')}";
     }
 
+    final String matingDateStr = finalMatingDate != null
+        ? "${finalMatingDate.year.toString().padLeft(4, '0')}-${finalMatingDate.month.toString().padLeft(2, '0')}-${finalMatingDate.day.toString().padLeft(2, '0')}"
+        : '';
+
     final success = await Provider.of<CowProvider>(context, listen: false).addCow(
       userId: widget.userId,
       tagNumber: _tagController.text.trim(),
       name: _nameController.text.trim().isEmpty ? null : _nameController.text.trim(),
       status: _selectedStatus,
-      matingDate: _matingDate != null ? "${_matingDate!.year.toString().padLeft(4, '0')}-${_matingDate!.month.toString().padLeft(2, '0')}-${_matingDate!.day.toString().padLeft(2, '0')}" : null,
-      hasLactatedBefore: (_selectedStatus == 'MILKING' || _selectedStatus == 'PREGNANT' || _selectedStatus == 'DRY') ? 1 : 0,
+      matingDate: matingDateStr.isNotEmpty ? matingDateStr : null,
+      hasLactatedBefore: _hasLactatedBefore,
       estimatedBirthDate: estimatedBirthDateStr,
     );
 
@@ -812,124 +1016,259 @@ class _AddCowSheetState extends State<_AddCowSheet> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Drag handle
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE0E0E0),
-                  borderRadius: BorderRadius.circular(2),
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE0E0E0),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 20),
-            const Text(
-              'Add Cow',
-              style: TextStyle(
-                color: AppColors.textDark,
-                fontSize: 20,
-                fontWeight: FontWeight.w800,
-                letterSpacing: -0.4,
+              const SizedBox(height: 20),
+              const Text(
+                'Add Cow',
+                style: TextStyle(
+                  color: AppColors.textDark,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.4,
+                ),
               ),
-            ),
-            const SizedBox(height: 20),
+              const SizedBox(height: 20),
 
-            // Tag field
-            TextFormField(
-              controller: _tagController,
-              onChanged: (val) {
-                if (_tagError != null) setState(() => _tagError = null);
-              },
-              decoration: InputDecoration(
-                labelText: 'Tag Number *',
-                prefixIcon: const Icon(Icons.tag_rounded, size: 20),
-                errorText: _tagError,
-              ),
-              textCapitalization: TextCapitalization.characters,
-              validator: (v) => (v == null || v.trim().isEmpty) ? 'Tag number is required' : null,
-            ),
-            const SizedBox(height: 14),
-
-            // Name field
-            TextFormField(
-              controller: _nameController,
-              decoration: const InputDecoration(
-                labelText: 'Name (optional)',
-                prefixIcon: Icon(Icons.pets_rounded, size: 20),
-              ),
-              textCapitalization: TextCapitalization.words,
-            ),
-            const SizedBox(height: 14),
-
-            // Status Selector (Adult Slider + Heifer/Bred Heifer Pills)
-            _AddCowStatusSelector(
-              selectedStatus: _selectedStatus,
-              onStatusChanged: (val) {
-                setState(() {
-                  _selectedStatus = val;
-                  if (val != 'PREGNANT' && val != 'DRY' && val != 'BRED_HEIFER') {
-                    _matingDate = null;
-                  }
-                });
-              },
-            ),
-            if (_selectedStatus == 'PREGNANT' || _selectedStatus == 'DRY' || _selectedStatus == 'BRED_HEIFER') ...[
-              const SizedBox(height: 14),
-              InkWell(
-                onTap: () async {
-                  final selected = await showDatePicker(
-                    context: context,
-                    initialDate: _matingDate ?? DateTime.now(),
-                    firstDate: DateTime.now().subtract(const Duration(days: 365)),
-                    lastDate: DateTime.now(),
-                  );
-                  if (selected != null) {
-                    setState(() => _matingDate = selected);
-                  }
+              // Tag field
+              TextFormField(
+                controller: _tagController,
+                onChanged: (val) {
+                  if (_tagError != null) setState(() => _tagError = null);
                 },
-                child: InputDecorator(
-                  decoration: InputDecoration(
-                    labelText: _selectedStatus == 'DRY' ? 'Dry-Off Date *' : 'Mating Date *',
-                    prefixIcon: Icon(
-                      _selectedStatus == 'DRY' ? Icons.bedtime_outlined : Icons.calendar_today_rounded,
-                      size: 20,
-                    ),
-                  ),
-                  child: Text(
-                    _matingDate != null 
-                        ? "${_matingDate!.year}-${_matingDate!.month.toString().padLeft(2, '0')}-${_matingDate!.day.toString().padLeft(2, '0')}"
-                        : 'Select Date',
-                    style: TextStyle(
-                      color: _matingDate != null ? AppColors.textDark : AppColors.textGrey,
-                      fontSize: 16,
-                    ),
-                  ),
+                decoration: InputDecoration(
+                  labelText: 'Tag Number *',
+                  prefixIcon: const Icon(Icons.tag_rounded, size: 20),
+                  errorText: _tagError,
                 ),
+                textCapitalization: TextCapitalization.characters,
+                validator: (v) => (v == null || v.trim().isEmpty) ? 'Tag number is required' : null,
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 14),
+
+              // Name field
+              TextFormField(
+                controller: _nameController,
+                decoration: const InputDecoration(
+                  labelText: 'Name (optional)',
+                  prefixIcon: Icon(Icons.pets_rounded, size: 20),
+                ),
+                textCapitalization: TextCapitalization.words,
+              ),
+              const SizedBox(height: 16),
+
+              // Question 1: Has she given birth before?
+              const Text(
+                'Has she given birth / calved before? *',
+                style: TextStyle(color: AppColors.textDark, fontSize: 14, fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        backgroundColor: _hasLactatedBefore == 1 ? AppColors.sageTint : Colors.transparent,
+                        side: BorderSide(color: _hasLactatedBefore == 1 ? AppColors.deepGreen : Colors.grey.shade300),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      onPressed: () => _onLactationChanged(1),
+                      child: const Text('Yes — Given Birth (Adult)', style: TextStyle(color: AppColors.deepGreen, fontWeight: FontWeight.bold, fontSize: 13)),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        backgroundColor: _hasLactatedBefore == 0 ? AppColors.sageTint : Colors.transparent,
+                        side: BorderSide(color: _hasLactatedBefore == 0 ? AppColors.deepGreen : Colors.grey.shade300),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      onPressed: () => _onLactationChanged(0),
+                      child: const Text('No — Never Calved (Heifer)', style: TextStyle(color: AppColors.deepGreen, fontWeight: FontWeight.bold, fontSize: 13)),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              // Question 2: What is her current state?
               Text(
-                _selectedStatus == 'DRY' 
-                    ? 'Date cow was dried off for pre-calving rest' 
-                    : 'Auto-calculates expected calving date (+283 days)',
-                style: const TextStyle(color: AppColors.textGrey, fontSize: 12),
+                _hasLactatedBefore == 1 ? 'What is her current adult state? *' : 'What is her current heifer state? *',
+                style: const TextStyle(color: AppColors.textDark, fontSize: 14, fontWeight: FontWeight.w700),
               ),
-              if (_matingDate != null && DateTime.now().difference(_matingDate!).inDays > 300) ...[
-                const SizedBox(height: 8),
-                const Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+              const SizedBox(height: 8),
+              if (_hasLactatedBefore == 1) ...[
+                Row(
                   children: [
-                    Icon(Icons.warning_amber_rounded, size: 16, color: AppColors.warningRed),
-                    SizedBox(width: 6),
                     Expanded(
-                      child: Text(
-                        'This date is over 10 months ago — please confirm this is correct.',
-                        style: TextStyle(color: AppColors.warningRed, fontSize: 12),
+                      child: _AddPillChip(
+                        label: 'Milking',
+                        isSelected: _selectedStatus == 'MILKING',
+                        onTap: () => setState(() { _selectedStatus = 'MILKING'; _matingDate = null; }),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _AddPillChip(
+                        label: 'Pregnant',
+                        isSelected: _selectedStatus == 'PREGNANT',
+                        onTap: () => setState(() => _selectedStatus = 'PREGNANT'),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _AddPillChip(
+                        label: 'Dry Cow',
+                        isSelected: _selectedStatus == 'DRY',
+                        onTap: () => setState(() => _selectedStatus = 'DRY'),
+                      ),
+                    ),
+                  ],
+                ),
+              ] else ...[
+                Row(
+                  children: [
+                    Expanded(
+                      child: _AddPillChip(
+                        label: 'Young Heifer',
+                        isSelected: _selectedStatus == 'HEIFER',
+                        onTap: () => setState(() { _selectedStatus = 'HEIFER'; _matingDate = null; }),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _AddPillChip(
+                        label: 'Pregnant Heifer',
+                        isSelected: _selectedStatus == 'BRED_HEIFER',
+                        onTap: () => setState(() => _selectedStatus = 'BRED_HEIFER'),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _AddPillChip(
+                        label: 'Dry Heifer',
+                        isSelected: _selectedStatus == 'DRY',
+                        onTap: () => setState(() => _selectedStatus = 'DRY'),
                       ),
                     ),
                   ],
                 ),
               ],
-            ],
+
+              // Gestation Timing Options (Only shown for Pregnant / Dry selections)
+              if (isPregnantOrDry) ...[
+                const SizedBox(height: 18),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('Gestation Entry Method', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.textDark)),
+                    Row(
+                      children: [
+                        ChoiceChip(
+                          label: const Text('Mating Date', style: TextStyle(fontSize: 12)),
+                          selected: _gestationInputMode == 'DATE',
+                          selectedColor: AppColors.sageTint,
+                          onSelected: (_) => setState(() => _gestationInputMode = 'DATE'),
+                        ),
+                        const SizedBox(width: 6),
+                        ChoiceChip(
+                          label: const Text('Gestation Age', style: TextStyle(fontSize: 12)),
+                          selected: _gestationInputMode == 'AGE',
+                          selectedColor: AppColors.sageTint,
+                          onSelected: (_) => setState(() => _gestationInputMode = 'AGE'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                if (_gestationInputMode == 'DATE') ...[
+                  InkWell(
+                    onTap: () async {
+                      final selected = await showDatePicker(
+                        context: context,
+                        initialDate: _matingDate ?? DateTime.now(),
+                        firstDate: DateTime.now().subtract(const Duration(days: 365)),
+                        lastDate: DateTime.now(),
+                      );
+                      if (selected != null) {
+                        setState(() => _matingDate = selected);
+                      }
+                    },
+                    child: InputDecorator(
+                      decoration: InputDecoration(
+                        labelText: _selectedStatus == 'DRY' ? 'Dry-Off Date / Mating Date *' : 'Mating Date *',
+                        prefixIcon: Icon(
+                          _selectedStatus == 'DRY' ? Icons.bedtime_outlined : Icons.calendar_today_rounded,
+                          size: 20,
+                        ),
+                      ),
+                      child: Text(
+                        _matingDate != null
+                            ? "${_matingDate!.year}-${_matingDate!.month.toString().padLeft(2, '0')}-${_matingDate!.day.toString().padLeft(2, '0')}"
+                            : 'Select Date',
+                        style: TextStyle(
+                          color: _matingDate != null ? AppColors.textDark : AppColors.textGrey,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                  ),
+                ] else ...[
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppColors.cardSubtle,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: AppColors.deepGreen.withValues(alpha: 0.3)),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        Column(
+                          children: [
+                            const Text('Month (1-9)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                            DropdownButton<int>(
+                              value: _gestationMonth,
+                              items: List.generate(9, (i) => i + 1)
+                                  .map((m) => DropdownMenuItem(value: m, child: Text('Month $m')))
+                                  .toList(),
+                              onChanged: (val) {
+                                if (val != null) setState(() => _gestationMonth = val);
+                              },
+                            ),
+                          ],
+                        ),
+                        Column(
+                          children: [
+                            const Text('Days (0-30)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                            DropdownButton<int>(
+                              value: _gestationDay,
+                              items: List.generate(31, (i) => i)
+                                  .map((d) => DropdownMenuItem(value: d, child: Text('$d Days')))
+                                  .toList(),
+                              onChanged: (val) {
+                                if (val != null) setState(() => _gestationDay = val);
+                              },
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
               const SizedBox(height: 14),
               CowAgePicker(
                 initialYears: _ageYears,
