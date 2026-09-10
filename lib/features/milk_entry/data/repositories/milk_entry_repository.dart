@@ -1,7 +1,7 @@
 import '../../../../core/database/database_helper.dart';
 import '../../../../core/utils/money_utils.dart';
 import '../../data/datasources/ledger_local_datasource.dart';
-import '../models/ledger_entry_model.dart';
+import 'package:dairy_farm_app/features/milk_entry/data/models/ledger_entry_model.dart';
 
 /// Business-logic layer for recording milk entries.
 ///

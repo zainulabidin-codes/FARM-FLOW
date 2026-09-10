@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../data/models/ledger_entry_model.dart';
+import 'package:dairy_farm_app/features/milk_entry/data/models/ledger_entry_model.dart';
 
 enum ConflictResolutionAction {
   cancel,

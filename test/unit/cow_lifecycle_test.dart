@@ -292,18 +292,21 @@ void main() {
         hasLactatedBefore: 1,
       );
 
+      final recentMatingDate = DateTime.now().subtract(const Duration(days: 10));
+      final recentMatingStr = "${recentMatingDate.year.toString().padLeft(4, '0')}-${recentMatingDate.month.toString().padLeft(2, '0')}-${recentMatingDate.day.toString().padLeft(2, '0')}";
+
       await provider.fetchCows(1);
       final success = await provider.recordMating(
         cowId: cow.id!,
         cowName: cow.name!,
-        matingDate: '2026-08-10',
+        matingDate: recentMatingStr,
         userId: 1,
       );
       expect(success, isTrue);
 
       final updatedCow = provider.cows.firstWhere((c) => c.id == cow.id);
       expect(updatedCow.status, equals('PENDING_CONFIRMATION'));
-      expect(updatedCow.matingDate, equals('2026-08-10'));
+      expect(updatedCow.matingDate, equals(recentMatingStr));
       expect(updatedCow.deliveryDate, isNotNull);
       expect(updatedCow.isPregnancyConfirmed, equals(0));
       expect(updatedCow.confirmationDate, isNull);
@@ -623,6 +626,99 @@ void main() {
       final updatedCow = provider.cows.firstWhere((c) => c.id == cow.id);
       expect(updatedCow.confirmationDate, equals('2026-08-26'), reason: 'Confirmation date should be updated');
       expect(updatedCow.confirmationMethod, equals('SELF'));
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Phase 4 — Add Cow Direct Confirmation Tests
+  // ---------------------------------------------------------------------------
+  group('Phase 4 — Add Cow Direct Confirmation Tests', () {
+    test('addCow as PREGNANT with mating date immediately sets is_pregnancy_confirmed = 1 and method = SELF', () async {
+      DatabaseHelper.initForPlatform();
+      final repo = CowRepository();
+      final provider = CowProvider(repository: repo);
+      final userId = 401;
+
+      final todayStr = '2026-09-09';
+      final cow = await repo.addCow(
+        userId: userId,
+        tagNumber: 'P4_PREG_${DateTime.now().microsecondsSinceEpoch}',
+        name: 'Direct Pregnant Cow',
+        status: 'PREGNANT',
+        matingDate: '2026-06-01',
+        hasLactatedBefore: 1,
+        isPregnancyConfirmed: 1,
+        confirmationDate: todayStr,
+        confirmationMethod: 'SELF',
+      );
+
+      await provider.fetchCows(userId);
+      final savedCow = provider.cows.firstWhere((c) => c.id == cow.id);
+
+      expect(savedCow.status, equals('PREGNANT'));
+      expect(savedCow.hasLactatedBefore, equals(1));
+      expect(savedCow.matingDate, equals('2026-06-01'));
+      expect(savedCow.isPregnancyConfirmed, equals(1), reason: 'Must be confirmed immediately upon insertion, not deferred to Day 29 sweep');
+      expect(savedCow.confirmationMethod, equals('SELF'));
+      expect(savedCow.confirmationDate, equals(todayStr));
+    });
+
+    test('addCow as BRED_HEIFER with mating date immediately sets is_pregnancy_confirmed = 1, method = SELF, and has_lactated_before = 0', () async {
+      DatabaseHelper.initForPlatform();
+      final repo = CowRepository();
+      final provider = CowProvider(repository: repo);
+      final userId = 402;
+
+      final todayStr = '2026-09-09';
+      final cow = await repo.addCow(
+        userId: userId,
+        tagNumber: 'P4_HEIF_${DateTime.now().microsecondsSinceEpoch}',
+        name: 'Direct Bred Heifer',
+        status: 'BRED_HEIFER',
+        matingDate: '2026-07-01',
+        hasLactatedBefore: 0,
+        isPregnancyConfirmed: 1,
+        confirmationDate: todayStr,
+        confirmationMethod: 'SELF',
+      );
+
+      await provider.fetchCows(userId);
+      final savedCow = provider.cows.firstWhere((c) => c.id == cow.id);
+
+      expect(savedCow.status, equals('BRED_HEIFER'));
+      expect(savedCow.hasLactatedBefore, equals(0), reason: 'BRED_HEIFER must have hasLactatedBefore = 0');
+      expect(savedCow.matingDate, equals('2026-07-01'));
+      expect(savedCow.isPregnancyConfirmed, equals(1), reason: 'Must be confirmed immediately upon insertion');
+      expect(savedCow.confirmationMethod, equals('SELF'));
+    });
+
+    test('addCow as DRY without mating date leaves is_pregnancy_confirmed = 0, method = null, and mating_date = null', () async {
+      DatabaseHelper.initForPlatform();
+      final repo = CowRepository();
+      final provider = CowProvider(repository: repo);
+      final userId = 403;
+
+      final cow = await repo.addCow(
+        userId: userId,
+        tagNumber: 'P4_DRY_${DateTime.now().microsecondsSinceEpoch}',
+        name: 'Plain Resting Dry Cow',
+        status: 'DRY',
+        matingDate: null,
+        hasLactatedBefore: 1,
+        isPregnancyConfirmed: 0,
+        confirmationDate: null,
+        confirmationMethod: null,
+      );
+
+      await provider.fetchCows(userId);
+      final savedCow = provider.cows.firstWhere((c) => c.id == cow.id);
+
+      expect(savedCow.status, equals('DRY'));
+      expect(savedCow.hasLactatedBefore, equals(1));
+      expect(savedCow.matingDate, isNull);
+      expect(savedCow.deliveryDate, isNull);
+      expect(savedCow.isPregnancyConfirmed, equals(0), reason: 'Plain dry cow without mating date must be unconfirmed');
+      expect(savedCow.confirmationMethod, isNull);
     });
   });
 }

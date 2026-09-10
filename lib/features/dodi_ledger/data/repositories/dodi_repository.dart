@@ -1,6 +1,6 @@
 import '../../../../core/database/database_helper.dart';
 import '../../../milk_entry/data/datasources/ledger_local_datasource.dart';
-import '../../../milk_entry/data/models/ledger_entry_model.dart';
+import 'package:dairy_farm_app/features/milk_entry/data/models/ledger_entry_model.dart';
 import '../datasources/dodi_local_datasource.dart';
 import '../models/dodi_dashboard_summary.dart';
 import '../models/dodi_model.dart';

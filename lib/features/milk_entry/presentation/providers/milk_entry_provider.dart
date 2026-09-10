@@ -4,7 +4,7 @@ import 'package:flutter/material.dart' show Icons;
 import '../../data/repositories/milk_entry_repository.dart';
 import '../../../dashboard/data/models/activity_log_model.dart';
 import '../../../dashboard/data/repositories/activity_log_repository.dart';
-import '../../data/models/ledger_entry_model.dart';
+import 'package:dairy_farm_app/features/milk_entry/data/models/ledger_entry_model.dart';
 
 /// Loading state for milk entry operations.
 enum MilkEntryStatus { idle, loading, success, error }

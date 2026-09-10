@@ -483,12 +483,11 @@ class AppShellState extends State<AppShell> with WidgetsBindingObserver {
                 Navigator.of(ctx).pop();
                 final cowProvider = context.read<CowProvider>();
                 final success = await cowProvider.confirmPregnancy(cowId, widget.userId, method: selectedMethod);
-                if (mounted) {
-                  if (success) {
-                    AppToast.showSuccess(context, '✅ Pregnancy confirmed ($selectedMethod) for Cow #$cowName.');
-                  } else {
-                    AppToast.showError(context, cowProvider.errorMessage ?? 'Failed to confirm pregnancy.');
-                  }
+                if (!mounted) return;
+                if (success) {
+                  AppToast.showSuccess(context, '✅ Pregnancy confirmed ($selectedMethod) for Cow #$cowName.');
+                } else {
+                  AppToast.showError(context, cowProvider.errorMessage ?? 'Failed to confirm pregnancy.');
                 }
               },
               child: const Text('Save Method'),
@@ -514,6 +513,8 @@ class AppShellState extends State<AppShell> with WidgetsBindingObserver {
   }
 
   // ── Add Cow modal ─────────────────────────────────────────────────────────
+
+  void openAddCowSheet() => _onAddCowTap();
 
   void _onAddCowTap() async {
     await showModalBottomSheet<void>(
@@ -984,6 +985,8 @@ class _AddCowSheetState extends State<_AddCowSheet> {
       matingDate: matingDateStr.isNotEmpty ? matingDateStr : null,
       hasLactatedBefore: _hasLactatedBefore,
       estimatedBirthDate: estimatedBirthDateStr,
+      isPregnancyConfirmed: isConfirmed,
+      confirmationMethod: method,
     );
 
     if (!mounted) return;
@@ -1071,34 +1074,70 @@ class _AddCowSheetState extends State<_AddCowSheet> {
                 style: TextStyle(color: AppColors.textDark, fontSize: 14, fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      style: OutlinedButton.styleFrom(
-                        backgroundColor: _hasLactatedBefore == 1 ? AppColors.sageTint : Colors.transparent,
-                        side: BorderSide(color: _hasLactatedBefore == 1 ? AppColors.deepGreen : Colors.grey.shade300),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              Container(
+                decoration: BoxDecoration(
+                  color: AppColors.cardSubtle,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: const EdgeInsets.all(3),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => _onLactationChanged(1),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          curve: Curves.easeInOut,
+                          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+                          decoration: BoxDecoration(
+                            color: _hasLactatedBefore == 1 ? AppColors.cardWhite : Colors.transparent,
+                            borderRadius: BorderRadius.circular(10),
+                            border: _hasLactatedBefore == 1 ? Border.all(color: AppColors.deepGreen.withValues(alpha: 0.3)) : null,
+                            boxShadow: _hasLactatedBefore == 1
+                                ? [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 4, offset: const Offset(0, 2))]
+                                : null,
+                          ),
+                          child: Text(
+                            'Yes — Given Birth\n(Adult)',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: _hasLactatedBefore == 1 ? AppColors.deepGreen : AppColors.textGrey,
+                              fontSize: 13,
+                              fontWeight: _hasLactatedBefore == 1 ? FontWeight.w700 : FontWeight.w500,
+                            ),
+                          ),
+                        ),
                       ),
-                      onPressed: () => _onLactationChanged(1),
-                      child: const Text('Yes — Given Birth (Adult)', style: TextStyle(color: AppColors.deepGreen, fontWeight: FontWeight.bold, fontSize: 13)),
                     ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: OutlinedButton(
-                      style: OutlinedButton.styleFrom(
-                        backgroundColor: _hasLactatedBefore == 0 ? AppColors.sageTint : Colors.transparent,
-                        side: BorderSide(color: _hasLactatedBefore == 0 ? AppColors.deepGreen : Colors.grey.shade300),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => _onLactationChanged(0),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          curve: Curves.easeInOut,
+                          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+                          decoration: BoxDecoration(
+                            color: _hasLactatedBefore == 0 ? AppColors.cardWhite : Colors.transparent,
+                            borderRadius: BorderRadius.circular(10),
+                            border: _hasLactatedBefore == 0 ? Border.all(color: AppColors.deepGreen.withValues(alpha: 0.3)) : null,
+                            boxShadow: _hasLactatedBefore == 0
+                                ? [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 4, offset: const Offset(0, 2))]
+                                : null,
+                          ),
+                          child: Text(
+                            'No — Never Calved\n(Heifer)',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: _hasLactatedBefore == 0 ? AppColors.deepGreen : AppColors.textGrey,
+                              fontSize: 13,
+                              fontWeight: _hasLactatedBefore == 0 ? FontWeight.w700 : FontWeight.w500,
+                            ),
+                          ),
+                        ),
                       ),
-                      onPressed: () => _onLactationChanged(0),
-                      child: const Text('No — Never Calved (Heifer)', style: TextStyle(color: AppColors.deepGreen, fontWeight: FontWeight.bold, fontSize: 13)),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
               const SizedBox(height: 16),
 
@@ -1169,32 +1208,80 @@ class _AddCowSheetState extends State<_AddCowSheet> {
               // Gestation Timing Options (Only shown for Pregnant / Dry selections)
               if (isPregnantOrDry) ...[
                 const SizedBox(height: 18),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text('Gestation Entry Method', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.textDark)),
-                    Row(
-                      children: [
-                        ChoiceChip(
-                          label: const Text('Mating Date', style: TextStyle(fontSize: 12)),
-                          selected: _gestationInputMode == 'DATE',
-                          selectedColor: AppColors.sageTint,
-                          onSelected: (_) => setState(() => _gestationInputMode = 'DATE'),
+                const Text(
+                  'How do you want to enter pregnancy info? *',
+                  style: TextStyle(color: AppColors.textDark, fontSize: 14, fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  decoration: BoxDecoration(
+                    color: AppColors.cardSubtle,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  padding: const EdgeInsets.all(3),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () => setState(() => _gestationInputMode = 'DATE'),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            curve: Curves.easeInOut,
+                            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+                            decoration: BoxDecoration(
+                              color: _gestationInputMode == 'DATE' ? AppColors.cardWhite : Colors.transparent,
+                              borderRadius: BorderRadius.circular(10),
+                              border: _gestationInputMode == 'DATE' ? Border.all(color: AppColors.deepGreen.withValues(alpha: 0.3)) : null,
+                              boxShadow: _gestationInputMode == 'DATE'
+                                  ? [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 4, offset: const Offset(0, 2))]
+                                  : null,
+                            ),
+                            child: Text(
+                              'Exact Mating Date',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: _gestationInputMode == 'DATE' ? AppColors.deepGreen : AppColors.textGrey,
+                                fontSize: 13,
+                                fontWeight: _gestationInputMode == 'DATE' ? FontWeight.w700 : FontWeight.w500,
+                              ),
+                            ),
+                          ),
                         ),
-                        const SizedBox(width: 6),
-                        ChoiceChip(
-                          label: const Text('Gestation Age', style: TextStyle(fontSize: 12)),
-                          selected: _gestationInputMode == 'AGE',
-                          selectedColor: AppColors.sageTint,
-                          onSelected: (_) => setState(() => _gestationInputMode = 'AGE'),
+                      ),
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () => setState(() => _gestationInputMode = 'AGE'),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            curve: Curves.easeInOut,
+                            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+                            decoration: BoxDecoration(
+                              color: _gestationInputMode == 'AGE' ? AppColors.cardWhite : Colors.transparent,
+                              borderRadius: BorderRadius.circular(10),
+                              border: _gestationInputMode == 'AGE' ? Border.all(color: AppColors.deepGreen.withValues(alpha: 0.3)) : null,
+                              boxShadow: _gestationInputMode == 'AGE'
+                                  ? [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 4, offset: const Offset(0, 2))]
+                                  : null,
+                            ),
+                            child: Text(
+                              'Pregnancy Months &\nDays',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: _gestationInputMode == 'AGE' ? AppColors.deepGreen : AppColors.textGrey,
+                                fontSize: 13,
+                                fontWeight: _gestationInputMode == 'AGE' ? FontWeight.w700 : FontWeight.w500,
+                              ),
+                            ),
+                          ),
                         ),
-                      ],
-                    ),
-                  ],
+                      ),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 10),
                 if (_gestationInputMode == 'DATE') ...[
                   InkWell(
+                    borderRadius: BorderRadius.circular(12),
                     onTap: () async {
                       final selected = await showDatePicker(
                         context: context,
@@ -1206,22 +1293,45 @@ class _AddCowSheetState extends State<_AddCowSheet> {
                         setState(() => _matingDate = selected);
                       }
                     },
-                    child: InputDecorator(
-                      decoration: InputDecoration(
-                        labelText: _selectedStatus == 'DRY' ? 'Dry-Off Date / Mating Date *' : 'Mating Date *',
-                        prefixIcon: Icon(
-                          _selectedStatus == 'DRY' ? Icons.bedtime_outlined : Icons.calendar_today_rounded,
-                          size: 20,
-                        ),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                      decoration: BoxDecoration(
+                        color: AppColors.cardWhite,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFFE0E0E5)),
                       ),
-                      child: Text(
-                        _matingDate != null
-                            ? "${_matingDate!.year}-${_matingDate!.month.toString().padLeft(2, '0')}-${_matingDate!.day.toString().padLeft(2, '0')}"
-                            : 'Select Date',
-                        style: TextStyle(
-                          color: _matingDate != null ? AppColors.textDark : AppColors.textGrey,
-                          fontSize: 16,
-                        ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            _selectedStatus == 'DRY' ? Icons.bedtime_outlined : Icons.calendar_today_rounded,
+                            size: 20,
+                            color: AppColors.textGrey,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  _selectedStatus == 'DRY' ? 'Dry-Off Date / Mating Date *' : 'Mating Date *',
+                                  style: const TextStyle(fontSize: 12, color: AppColors.textGrey, fontWeight: FontWeight.w500),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  _matingDate != null
+                                      ? '${const ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][_matingDate!.month - 1]} ${_matingDate!.day.toString().padLeft(2, '0')}, ${_matingDate!.year}'
+                                      : 'Select Date',
+                                  style: TextStyle(
+                                    color: _matingDate != null ? AppColors.textDark : AppColors.textGrey,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.textGrey, size: 22),
+                        ],
                       ),
                     ),
                   ),
@@ -1520,154 +1630,8 @@ class _DeleteCowDialogState extends State<_DeleteCowDialog> {
 }
 
 // ---------------------------------------------------------------------------
-// Custom Status Selector for Add Cow Sheet
+// Helper Widgets for Add Cow Sheet
 // ---------------------------------------------------------------------------
-class _AddCowStatusSelector extends StatelessWidget {
-  final String selectedStatus;
-  final ValueChanged<String> onStatusChanged;
-
-  const _AddCowStatusSelector({
-    required this.selectedStatus,
-    required this.onStatusChanged,
-  });
-
-  bool get isAdult => selectedStatus == 'MILKING' || selectedStatus == 'PREGNANT' || selectedStatus == 'DRY';
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text(
-              'Status *',
-              style: TextStyle(
-                color: AppColors.textDark,
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            if (isAdult)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: AppColors.sageTint,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Text(
-                  'ADULT COW',
-                  style: TextStyle(
-                    color: AppColors.deepGreen,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-              ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Container(
-          padding: const EdgeInsets.all(4),
-          decoration: BoxDecoration(
-            color: isAdult ? AppColors.cardSubtle : const Color(0xFFF0F0F4),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: isAdult ? AppColors.deepGreen.withValues(alpha: 0.4) : const Color(0xFFE5E5EA),
-              width: isAdult ? 1.5 : 1,
-            ),
-          ),
-          child: Row(
-            children: [
-              _AddSegmentTile(
-                label: 'Milking',
-                isSelected: selectedStatus == 'MILKING',
-                onTap: () => onStatusChanged('MILKING'),
-              ),
-              _AddSegmentTile(
-                label: 'Pregnant',
-                isSelected: selectedStatus == 'PREGNANT',
-                onTap: () => onStatusChanged('PREGNANT'),
-              ),
-              _AddSegmentTile(
-                label: 'Dry',
-                isSelected: selectedStatus == 'DRY',
-                onTap: () => onStatusChanged('DRY'),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 10),
-        Row(
-          children: [
-            Expanded(
-              child: _AddPillChip(
-                label: 'Heifer',
-                isSelected: selectedStatus == 'HEIFER',
-                onTap: () => onStatusChanged('HEIFER'),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: _AddPillChip(
-                label: 'Bred Heifer',
-                isSelected: selectedStatus == 'BRED_HEIFER',
-                onTap: () => onStatusChanged('BRED_HEIFER'),
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-}
-
-class _AddSegmentTile extends StatelessWidget {
-  final String label;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  const _AddSegmentTile({required this.label, required this.isSelected, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeInOut,
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          decoration: BoxDecoration(
-            color: isSelected ? AppColors.deepGreen : Colors.transparent,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: isSelected
-                ? [
-                    BoxShadow(
-                      color: AppColors.deepGreen.withValues(alpha: 0.25),
-                      blurRadius: 8,
-                      offset: const Offset(0, 3),
-                    ),
-                  ]
-                : null,
-          ),
-          child: Text(
-            label,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: isSelected ? Colors.white : AppColors.textDark,
-              fontSize: 14,
-              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _AddPillChip extends StatelessWidget {
   final String label;
   final bool isSelected;

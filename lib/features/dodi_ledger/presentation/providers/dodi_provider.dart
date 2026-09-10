@@ -4,7 +4,7 @@ import 'package:flutter/material.dart' show Icons;
 import '../../data/models/dodi_dashboard_summary.dart';
 import '../../data/models/dodi_model.dart';
 import '../../data/repositories/dodi_repository.dart';
-import '../../../milk_entry/data/models/ledger_entry_model.dart';
+import 'package:dairy_farm_app/features/milk_entry/data/models/ledger_entry_model.dart';
 import '../../../dashboard/data/models/activity_log_model.dart';
 import '../../../dashboard/data/repositories/activity_log_repository.dart';
 

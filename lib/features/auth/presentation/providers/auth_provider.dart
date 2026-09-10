@@ -96,6 +96,21 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  bool _disposed = false;
+
+  @override
+  void dispose() {
+    _disposed = true;
+    super.dispose();
+  }
+
+  @override
+  void notifyListeners() {
+    if (!_disposed) {
+      super.notifyListeners();
+    }
+  }
+
   /// Logs out the current user and resets all state.
   void logout() {
     _currentUser = null;

@@ -26,6 +26,9 @@ class CowRepository {
     String? matingDate,
     int hasLactatedBefore = 0,
     String? estimatedBirthDate,
+    int isPregnancyConfirmed = 0,
+    String? confirmationDate,
+    String? confirmationMethod,
   }) async {
     String? deliveryDate;
     if (matingDate != null && matingDate.isNotEmpty) {
@@ -47,6 +50,9 @@ class CowRepository {
       deliveryDate: deliveryDate,
       hasLactatedBefore: hasLactatedBefore,
       estimatedBirthDate: estimatedBirthDate,
+      isPregnancyConfirmed: isPregnancyConfirmed,
+      confirmationDate: confirmationDate,
+      confirmationMethod: confirmationMethod,
     );
 
     final id = await _datasource.insertCow(cow);

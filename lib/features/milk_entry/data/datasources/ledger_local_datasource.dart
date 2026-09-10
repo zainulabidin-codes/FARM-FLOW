@@ -1,7 +1,7 @@
 import 'package:sqflite/sqflite.dart';
 
 import '../../../../core/database/database_helper.dart';
-import '../../../milk_entry/data/models/ledger_entry_model.dart';
+import 'package:dairy_farm_app/features/milk_entry/data/models/ledger_entry_model.dart';
 
 /// Low-level SQLite access for the `ledger` table.
 ///

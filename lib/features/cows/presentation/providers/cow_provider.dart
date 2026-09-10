@@ -312,6 +312,9 @@ class CowProvider extends ChangeNotifier {
     String? matingDate,
     int hasLactatedBefore = 0,
     String? estimatedBirthDate,
+    int isPregnancyConfirmed = 0,
+    String? confirmationDate,
+    String? confirmationMethod,
   }) async {
     _status = CowStatus.loading;
     _errorMessage = null;
@@ -326,6 +329,9 @@ class CowProvider extends ChangeNotifier {
         matingDate: matingDate,
         hasLactatedBefore: hasLactatedBefore,
         estimatedBirthDate: estimatedBirthDate,
+        isPregnancyConfirmed: isPregnancyConfirmed,
+        confirmationDate: confirmationDate,
+        confirmationMethod: confirmationMethod,
       );
       
       await _activityRepo.logActivity(

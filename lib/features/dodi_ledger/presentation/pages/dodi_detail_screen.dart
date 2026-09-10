@@ -9,7 +9,7 @@ import '../../../../core/utils/money_utils.dart';
 import '../../data/models/dodi_dashboard_summary.dart';
 import '../../data/models/dodi_model.dart';
 import '../../presentation/providers/dodi_provider.dart';
-import '../../../milk_entry/data/models/ledger_entry_model.dart';
+import 'package:dairy_farm_app/features/milk_entry/data/models/ledger_entry_model.dart';
 import '../../../milk_entry/presentation/providers/milk_entry_provider.dart';
 import 'package:dairy_farm_app/features/milk_entry/presentation/widgets/conflict_resolution_dialog.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
