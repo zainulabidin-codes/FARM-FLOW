@@ -98,7 +98,7 @@ class _CowsScreenState extends State<CowsScreen> {
         if (widget.selectedFilter == 'Milking' && milkingCowIds.contains(c.id)) return true;
         if (widget.selectedFilter == 'Pregnant' && (c.status == CowStatus.pregnant || c.status == CowStatus.bredHeifer)) return true;
         if (widget.selectedFilter == 'Dry' && (c.status == CowStatus.dry || dryCowIds.contains(c.id))) return true;
-        if (widget.selectedFilter == 'Heifer' && c.status == CowStatus.heifer) return true;
+        if (widget.selectedFilter == 'Heifer' && (c.status == CowStatus.heifer || (c.status == CowStatus.pendingConfirmation && !c.hasLactated))) return true;
         if (widget.selectedFilter == 'Bred Heifer' && c.status == CowStatus.bredHeifer) return true;
         return false;
       }).toList();
@@ -1592,7 +1592,7 @@ class _HeiferDetailsState extends State<_HeiferDetails> {
 
 // ---------------------------------------------------------------------------
 // _PendingConfirmationDetails
-// Sub-card: Observation progress line + Tier-1 Quick Confirmation Button.
+// Sub-card: Observation progress + milk stats (adults) + action buttons (day 21–28).
 // ---------------------------------------------------------------------------
 class _PendingConfirmationDetails extends StatefulWidget {
   final CowUiModel cow;
@@ -1604,9 +1604,9 @@ class _PendingConfirmationDetails extends StatefulWidget {
 }
 
 class _PendingConfirmationDetailsState extends State<_PendingConfirmationDetails> {
-  bool _isConfirming = false;
+  bool _isActionLoading = false;
 
-  void _handleConfirmPregnancy() async {
+  Future<void> _handleConfirmPregnancy() async {
     final cowIdInt = int.tryParse(widget.cow.id);
     if (cowIdInt == null) return;
 
@@ -1614,7 +1614,7 @@ class _PendingConfirmationDetailsState extends State<_PendingConfirmationDetails
     final cowModel = cowProvider.cows.where((c) => c.id == cowIdInt).firstOrNull;
     if (cowModel == null) return;
 
-    setState(() => _isConfirming = true);
+    setState(() => _isActionLoading = true);
     try {
       final success = await cowProvider.confirmPregnancy(
         cowIdInt,
@@ -1631,8 +1631,31 @@ class _PendingConfirmationDetailsState extends State<_PendingConfirmationDetails
       }
     } finally {
       if (mounted) {
-        setState(() => _isConfirming = false);
+        setState(() => _isActionLoading = false);
       }
+    }
+  }
+
+  Future<void> _handleHeatRepeated() async {
+    final cowIdInt = int.tryParse(widget.cow.id);
+    if (cowIdInt == null) return;
+
+    setState(() => _isActionLoading = true);
+    try {
+      final provider = context.read<CowProvider>();
+      final authProvider = context.read<AuthProvider>();
+      final userId = authProvider.currentUser?.id;
+      if (userId == null) return;
+
+      final success = await provider.reportHeatRepeated(cowIdInt, userId);
+      if (!mounted) return;
+      if (success) {
+        AppToast.showSuccess(context, '🔄 Heat repeated logged for ${widget.cow.name}. Mating reset.');
+      } else {
+        AppToast.showError(context, 'Failed to update mating state.');
+      }
+    } finally {
+      if (mounted) setState(() => _isActionLoading = false);
     }
   }
 
@@ -1641,10 +1664,78 @@ class _PendingConfirmationDetailsState extends State<_PendingConfirmationDetails
     final days = widget.cow.daysSinceMating ?? 0;
     final gestationDay = days + 1;
     final isConfirmable = gestationDay >= 21 && gestationDay <= 28;
+    final isAdult = widget.cow.hasLactated;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // ── Milk yield stats (adults only) ──────────────────────────────
+        if (isAdult) ...[
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Peak (Morning)', style: TextStyle(color: AppColors.textGrey, fontSize: 12)),
+                    const SizedBox(height: 2),
+                    Text(
+                      widget.cow.peakMorningYield ?? '—',
+                      style: const TextStyle(color: AppColors.textDark, fontSize: 15, fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Lowest (Morning)', style: TextStyle(color: AppColors.textGrey, fontSize: 12)),
+                    const SizedBox(height: 2),
+                    Text(
+                      widget.cow.lowestMorningYield ?? '—',
+                      style: const TextStyle(color: AppColors.textDark, fontSize: 15, fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Peak (Evening)', style: TextStyle(color: AppColors.textGrey, fontSize: 12)),
+                    const SizedBox(height: 2),
+                    Text(
+                      widget.cow.peakEveningYield ?? '—',
+                      style: const TextStyle(color: AppColors.textDark, fontSize: 15, fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Lowest (Evening)', style: TextStyle(color: AppColors.textGrey, fontSize: 12)),
+                    const SizedBox(height: 2),
+                    Text(
+                      widget.cow.lowestEveningYield ?? '—',
+                      style: const TextStyle(color: AppColors.textDark, fontSize: 15, fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+        ],
+
+        // ── Observation window banner (always) ─────────────────────────
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
@@ -1669,31 +1760,74 @@ class _PendingConfirmationDetailsState extends State<_PendingConfirmationDetails
             ],
           ),
         ),
+
+        // ── Confirm Pregnancy + Heat Repeated buttons (days 21–28) ─────
         if (isConfirmable) ...[
           const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.deepGreen,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                  icon: _isActionLoading
+                      ? const SizedBox.shrink()
+                      : const Icon(Icons.favorite_rounded, size: 14),
+                  label: _isActionLoading
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.cardWhite),
+                        )
+                      : const Text('Confirm Pregnancy', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                  onPressed: _isActionLoading ? null : _handleConfirmPregnancy,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.warningRed,
+                    side: const BorderSide(color: AppColors.warningRed),
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                  icon: const Icon(Icons.refresh_rounded, size: 14),
+                  label: const Text('Heat Repeated', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                  onPressed: _isActionLoading ? null : _handleHeatRepeated,
+                ),
+              ),
+            ],
+          ),
+        ],
+
+        // ── View Milk Records button (adults only, always) ─────────────
+        if (isAdult) ...[
+          const SizedBox(height: 10),
           SizedBox(
             width: double.infinity,
-            child: ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.deepGreen,
-                foregroundColor: AppColors.cardWhite,
-                elevation: 0,
-                padding: const EdgeInsets.symmetric(vertical: 12),
+            height: 36,
+            child: OutlinedButton.icon(
+              icon: const Icon(Icons.assessment_outlined, size: 16),
+              label: const Text('View Milk Records'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.deepGreen,
+                side: const BorderSide(color: AppColors.sageTint),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
               ),
-              icon: _isConfirming
-                  ? const SizedBox.shrink()
-                  : const Icon(Icons.favorite_rounded, size: 20),
-              label: _isConfirming
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.cardWhite),
-                    )
-                  : const Text('Confirm Pregnancy', style: TextStyle(fontWeight: FontWeight.w600)),
-              onPressed: _isConfirming ? null : _handleConfirmPregnancy,
+              onPressed: () {
+                Navigator.of(context).pushNamed(
+                  '/per-cow-milk',
+                  arguments: widget.cow.id,
+                );
+              },
             ),
           ),
         ],

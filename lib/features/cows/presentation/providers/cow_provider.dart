@@ -40,11 +40,11 @@ class CowProvider extends ChangeNotifier {
   }
 
   // ── 5 Category Herd Breakdown Getters (Strict Primary Status counts) ───────
-  int get milkingCount => _cows.where((c) => c.isDeleted == 0 && c.status == 'MILKING').length;
+  int get milkingCount => _cows.where((c) => c.isDeleted == 0 && (c.status == 'MILKING' || (c.status == 'PENDING_CONFIRMATION' && c.hasLactatedBefore == 1))).length;
   int get pregnantCount => _cows.where((c) => c.isDeleted == 0 && c.status == 'PREGNANT').length;
   int get dryCount => _cows.where((c) => c.isDeleted == 0 && c.status == 'DRY').length;
   int get bredHeiferCount => _cows.where((c) => c.isDeleted == 0 && c.status == 'BRED_HEIFER').length;
-  int get heiferCount => _cows.where((c) => c.isDeleted == 0 && c.status == 'HEIFER').length;
+  int get heiferCount => _cows.where((c) => c.isDeleted == 0 && (c.status == 'HEIFER' || (c.status == 'PENDING_CONFIRMATION' && c.hasLactatedBefore != 1))).length;
   int get pendingConfirmationCount => _cows.where((c) => c.isDeleted == 0 && c.status == 'PENDING_CONFIRMATION').length;
   List<CowModel> get pendingConfirmationCows => _cows.where((c) => c.isDeleted == 0 && c.status == 'PENDING_CONFIRMATION').toList();
 
