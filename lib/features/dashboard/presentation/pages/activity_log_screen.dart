@@ -5,6 +5,7 @@ import '../providers/activity_log_provider.dart';
 import '../../data/models/activity_log_model.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import 'package:intl/intl.dart';
+import '../../../../core/utils/activity_display_formatter.dart';
 
 class ActivityLogScreen extends StatefulWidget {
   const ActivityLogScreen({super.key});
@@ -114,23 +115,12 @@ class _ExpandableActivityCardState extends State<_ExpandableActivityCard> {
   }
 
   String _getTopRightText() {
-    final meta = widget.activity.metadata ?? {};
-    final title = widget.activity.title;
-    if (title == 'New Cow Added' || title == 'Cow Removed' || title == 'Cow Updated') {
-      final name = meta['name']?.toString() ?? widget.activity.subtitle;
-      final tag = meta['tag']?.toString();
-      if (tag != null && name != tag) {
-        return '$name ($tag)';
-      }
-      return name;
-    }
-    if (title == 'Payment Received' || title == 'Milk Sold') {
-      return '${widget.activity.subtitle}  ${widget.activity.value}';
-    }
-    if (title == 'Buyer Added' || title == 'Buyer Removed' || title == 'Buyer Updated') {
-      return widget.activity.subtitle;
-    }
-    return widget.activity.value;
+    return ActivityDisplayFormatter.getTopRightText(
+      title: widget.activity.title,
+      subtitle: widget.activity.subtitle,
+      value: widget.activity.value,
+      metadata: widget.activity.metadata,
+    );
   }
 
   String _getBottomRightText() {
@@ -142,34 +132,21 @@ class _ExpandableActivityCardState extends State<_ExpandableActivityCard> {
   }
 
   List<Widget> _buildLeftDetails() {
-    final meta = widget.activity.metadata ?? {};
-    final title = widget.activity.title;
-    
-    if (title == 'New Cow Added' || title == 'Cow Updated') {
-      return [
-        Text(widget.activity.value, style: const TextStyle(color: AppColors.textGrey, fontSize: 12)),
-      ];
-    }
-    if (title == 'Buyer Added' || title == 'Buyer Updated') {
-      return [
-        if (meta['phone'] != null)
-          Text(meta['phone'].toString(), style: const TextStyle(color: AppColors.textGrey, fontSize: 12)),
-        Text(widget.activity.value, style: const TextStyle(color: AppColors.textGrey, fontSize: 12)),
-      ];
-    }
-    if (title == 'Cow Removed' || title == 'Buyer Removed') {
-      return [
-        Text(widget.activity.value, style: const TextStyle(color: AppColors.textGrey, fontSize: 12)),
-      ];
-    }
-    return [
-      Text(
-        widget.activity.subtitle,
-        maxLines: 2,
-        overflow: TextOverflow.ellipsis,
-        style: const TextStyle(color: AppColors.textGrey, fontSize: 12),
-      ),
-    ];
+    final details = ActivityDisplayFormatter.getLeftDetails(
+      title: widget.activity.title,
+      subtitle: widget.activity.subtitle,
+      value: widget.activity.value,
+      metadata: widget.activity.metadata,
+    );
+
+    return details
+        .map((text) => Text(
+              text,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(color: AppColors.textGrey, fontSize: 12),
+            ))
+        .toList();
   }
 
   String _formatExactTime(int timeUnix) {
@@ -220,6 +197,7 @@ class _ExpandableActivityCardState extends State<_ExpandableActivityCard> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Container(
                       width: 42,
@@ -257,28 +235,34 @@ class _ExpandableActivityCardState extends State<_ExpandableActivityCard> {
                         ],
                       ),
                     ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          _getTopRightText(),
-                          style: TextStyle(
-                            color: valueColor,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
+                    const SizedBox(width: 10),
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 140),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            _getTopRightText(),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                            style: TextStyle(
+                              color: valueColor,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          _getBottomRightText(),
-                          style: const TextStyle(
-                            color: AppColors.textGrey,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w400,
+                          const SizedBox(height: 2),
+                          Text(
+                            _getBottomRightText(),
+                            style: const TextStyle(
+                              color: AppColors.textGrey,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w400,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ],
                 ),

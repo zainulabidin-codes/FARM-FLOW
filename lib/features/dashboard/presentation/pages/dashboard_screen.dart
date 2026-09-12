@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/constants/app_strings.dart';
+import '../../../../core/utils/activity_display_formatter.dart';
 
 // ---------------------------------------------------------------------------
 // Data model — dashboard only (no DB logic, pure UI data carrier)
@@ -815,22 +816,12 @@ class _ActivityTile extends StatelessWidget {
   }
 
   String _getTopRightText() {
-    final meta = activity.metadata ?? {};
-    if (activity.title == 'New Cow Added' || activity.title == 'Cow Removed' || activity.title == 'Cow Updated' || activity.title == 'Pregnancy Ended' || activity.title == 'Pregnancy Confirmed' || activity.title == 'Heat Repeated') {
-      final name = meta['name']?.toString() ?? activity.subtitle;
-      final tag = meta['tag']?.toString();
-      if (tag != null && name != tag && !name.contains(tag)) {
-        return '$name ($tag)';
-      }
-      return name;
-    }
-    if (activity.title == 'Payment Received' || activity.title == 'Milk Sold') {
-      return '${activity.subtitle}  ${activity.value}';
-    }
-    if (activity.title == 'Buyer Added' || activity.title == 'Buyer Removed' || activity.title == 'Buyer Updated') {
-      return activity.subtitle;
-    }
-    return activity.value;
+    return ActivityDisplayFormatter.getTopRightText(
+      title: activity.title,
+      subtitle: activity.subtitle,
+      value: activity.value,
+      metadata: activity.metadata,
+    );
   }
 
   String _getBottomRightText() {
@@ -841,32 +832,21 @@ class _ActivityTile extends StatelessWidget {
   }
 
   List<Widget> _buildLeftDetails() {
-    final meta = activity.metadata ?? {};
-    if (activity.title == 'New Cow Added' || activity.title == 'Cow Updated') {
-      return [
-        Text(activity.value, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13, color: AppColors.textGrey)),
-      ];
-    }
-    if (activity.title == 'Pregnancy Ended' || activity.title == 'Pregnancy Confirmed' || activity.title == 'Heat Repeated') {
-      return [
-        Text(activity.value, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13, color: AppColors.textGrey)),
-      ];
-    }
-    if (activity.title == 'Buyer Added' || activity.title == 'Buyer Updated') {
-      return [
-        if (meta['phone'] != null)
-          Text(meta['phone'].toString(), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13, color: AppColors.textGrey)),
-        Text(activity.value, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13, color: AppColors.textGrey)),
-      ];
-    }
-    if (activity.title == 'Cow Removed' || activity.title == 'Buyer Removed') {
-      return [
-        Text(activity.value, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13, color: AppColors.textGrey)),
-      ];
-    }
-    return [
-      Text(activity.subtitle, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13, color: AppColors.textGrey)),
-    ];
+    final details = ActivityDisplayFormatter.getLeftDetails(
+      title: activity.title,
+      subtitle: activity.subtitle,
+      value: activity.value,
+      metadata: activity.metadata,
+    );
+
+    return details
+        .map((text) => Text(
+              text,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 13, color: AppColors.textGrey),
+            ))
+        .toList();
   }
 
   String _formatExactTime(int timeUnix) {

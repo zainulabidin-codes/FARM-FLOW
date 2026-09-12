@@ -21,7 +21,7 @@ class ActivityLogProvider extends ChangeNotifier {
   String? _error;
 
   ActivityLogProvider({ActivityLogRepository? repository})
-      : _repository = repository ?? ActivityLogRepository();
+    : _repository = repository ?? ActivityLogRepository();
 
   List<ActivityLogModel> get activities => _activities;
   bool get isLoading => _isLoading;
@@ -82,16 +82,18 @@ class ActivityLogProvider extends ChangeNotifier {
     required String buyerName,
     required String quantityString,
   }) async {
-    await _logActivity(ActivityLogModel(
-      userId: userId,
-      title: 'Milk Entry Added',
-      subtitle: buyerName,
-      value: '$quantityString Kg',
-      timeUnix: DateTime.now().millisecondsSinceEpoch,
-      iconCode: Icons.water_drop_rounded.codePoint,
-      isPositive: 1,
-      metadata: {'name': buyerName},
-    ));
+    await _logActivity(
+      ActivityLogModel(
+        userId: userId,
+        title: 'Milk Entry Added',
+        subtitle: buyerName,
+        value: '$quantityString Kg',
+        timeUnix: DateTime.now().millisecondsSinceEpoch,
+        iconCode: Icons.water_drop_rounded.codePoint,
+        isPositive: 1,
+        metadata: {'name': buyerName},
+      ),
+    );
   }
 
   /// Logs an existing milk entry being updated.
@@ -100,16 +102,18 @@ class ActivityLogProvider extends ChangeNotifier {
     required String buyerName,
     required String quantityString,
   }) async {
-    await _logActivity(ActivityLogModel(
-      userId: userId,
-      title: 'Milk Entry Updated',
-      subtitle: buyerName,
-      value: '$quantityString Kg',
-      timeUnix: DateTime.now().millisecondsSinceEpoch,
-      iconCode: Icons.edit_note_rounded.codePoint,
-      isPositive: 1,
-      metadata: {'name': buyerName},
-    ));
+    await _logActivity(
+      ActivityLogModel(
+        userId: userId,
+        title: 'Milk Entry Updated',
+        subtitle: buyerName,
+        value: '$quantityString Kg',
+        timeUnix: DateTime.now().millisecondsSinceEpoch,
+        iconCode: Icons.edit_note_rounded.codePoint,
+        isPositive: 1,
+        metadata: {'name': buyerName},
+      ),
+    );
   }
 
   /// Logs a milk entry being deleted from a buyer's ledger.
@@ -117,16 +121,18 @@ class ActivityLogProvider extends ChangeNotifier {
     required int userId,
     required String buyerName,
   }) async {
-    await _logActivity(ActivityLogModel(
-      userId: userId,
-      title: 'Milk Entry Deleted',
-      subtitle: buyerName,
-      value: 'Removed Entry',
-      timeUnix: DateTime.now().millisecondsSinceEpoch,
-      iconCode: Icons.delete_outline_rounded.codePoint,
-      isPositive: 0,
-      metadata: {'name': buyerName},
-    ));
+    await _logActivity(
+      ActivityLogModel(
+        userId: userId,
+        title: 'Milk Entry Deleted',
+        subtitle: buyerName,
+        value: 'Removed Entry',
+        timeUnix: DateTime.now().millisecondsSinceEpoch,
+        iconCode: Icons.delete_outline_rounded.codePoint,
+        isPositive: 0,
+        metadata: {'name': buyerName},
+      ),
+    );
   }
 
   // ══════════════════════════════════════════════════════════════════════════
@@ -140,16 +146,18 @@ class ActivityLogProvider extends ChangeNotifier {
     required int ratePaise,
     String? phone,
   }) async {
-    await _logActivity(ActivityLogModel(
-      userId: userId,
-      title: 'Buyer Added',
-      subtitle: name,
-      value: 'Rate: Rs ${(ratePaise / 100).toStringAsFixed(2)}/Kg',
-      timeUnix: DateTime.now().millisecondsSinceEpoch,
-      iconCode: Icons.person_add_alt_1_rounded.codePoint,
-      isPositive: 1,
-      metadata: {'phone': phone},
-    ));
+    await _logActivity(
+      ActivityLogModel(
+        userId: userId,
+        title: 'Buyer Added',
+        subtitle: name,
+        value: 'Rate: Rs ${(ratePaise / 100).toStringAsFixed(2)}/Kg',
+        timeUnix: DateTime.now().millisecondsSinceEpoch,
+        iconCode: Icons.person_add_alt_1_rounded.codePoint,
+        isPositive: 1,
+        metadata: {'phone': phone},
+      ),
+    );
   }
 
   /// Logs a buyer's details being updated.
@@ -158,16 +166,18 @@ class ActivityLogProvider extends ChangeNotifier {
     required String name,
     String? phone,
   }) async {
-    await _logActivity(ActivityLogModel(
-      userId: userId,
-      title: 'Buyer Updated',
-      subtitle: name,
-      value: 'Details updated',
-      timeUnix: DateTime.now().millisecondsSinceEpoch,
-      iconCode: Icons.edit_note_rounded.codePoint,
-      isPositive: 1,
-      metadata: {'phone': phone},
-    ));
+    await _logActivity(
+      ActivityLogModel(
+        userId: userId,
+        title: 'Buyer Updated',
+        subtitle: name,
+        value: 'Details updated',
+        timeUnix: DateTime.now().millisecondsSinceEpoch,
+        iconCode: Icons.edit_note_rounded.codePoint,
+        isPositive: 1,
+        metadata: {'phone': phone},
+      ),
+    );
   }
 
   /// Logs a buyer being restored from the Bin.
@@ -175,16 +185,18 @@ class ActivityLogProvider extends ChangeNotifier {
     required int userId,
     required String name,
   }) async {
-    await _logActivity(ActivityLogModel(
-      userId: userId,
-      title: 'Buyer Restored',
-      subtitle: name,
-      value: 'Restored from Bin',
-      timeUnix: DateTime.now().millisecondsSinceEpoch,
-      iconCode: Icons.restore_from_trash_rounded.codePoint,
-      isPositive: 1,
-      metadata: {'name': name},
-    ));
+    await _logActivity(
+      ActivityLogModel(
+        userId: userId,
+        title: 'Buyer Restored',
+        subtitle: name,
+        value: 'Restored from Bin',
+        timeUnix: DateTime.now().millisecondsSinceEpoch,
+        iconCode: Icons.restore_from_trash_rounded.codePoint,
+        isPositive: 1,
+        metadata: {'name': name},
+      ),
+    );
   }
 
   /// Logs a buyer being soft-deleted (moved to the Bin).
@@ -192,16 +204,18 @@ class ActivityLogProvider extends ChangeNotifier {
     required int userId,
     required String name,
   }) async {
-    await _logActivity(ActivityLogModel(
-      userId: userId,
-      title: 'Buyer Moved to Bin',
-      subtitle: name,
-      value: 'Moved to Bin',
-      timeUnix: DateTime.now().millisecondsSinceEpoch,
-      iconCode: Icons.delete_outline_rounded.codePoint,
-      isPositive: 0,
-      metadata: {'name': name},
-    ));
+    await _logActivity(
+      ActivityLogModel(
+        userId: userId,
+        title: 'Buyer Moved to Bin',
+        subtitle: name,
+        value: 'Moved to Bin',
+        timeUnix: DateTime.now().millisecondsSinceEpoch,
+        iconCode: Icons.delete_outline_rounded.codePoint,
+        isPositive: 0,
+        metadata: {'name': name},
+      ),
+    );
   }
 
   /// Logs a buyer being permanently erased from SQLite.
@@ -209,16 +223,18 @@ class ActivityLogProvider extends ChangeNotifier {
     required int userId,
     required String name,
   }) async {
-    await _logActivity(ActivityLogModel(
-      userId: userId,
-      title: 'Buyer Permanently Deleted',
-      subtitle: name,
-      value: 'Permanently Erased',
-      timeUnix: DateTime.now().millisecondsSinceEpoch,
-      iconCode: Icons.delete_forever_rounded.codePoint,
-      isPositive: 0,
-      metadata: {'name': name},
-    ));
+    await _logActivity(
+      ActivityLogModel(
+        userId: userId,
+        title: 'Buyer Permanently Deleted',
+        subtitle: name,
+        value: 'Permanently Erased',
+        timeUnix: DateTime.now().millisecondsSinceEpoch,
+        iconCode: Icons.delete_forever_rounded.codePoint,
+        isPositive: 0,
+        metadata: {'name': name},
+      ),
+    );
   }
 
   /// Logs a ledger entry being deleted from a buyer's transaction history.
@@ -227,16 +243,18 @@ class ActivityLogProvider extends ChangeNotifier {
     required String buyerName,
     required String entryType,
   }) async {
-    await _logActivity(ActivityLogModel(
-      userId: userId,
-      title: 'Ledger Entry Deleted',
-      subtitle: '$buyerName - $entryType',
-      value: 'Removed',
-      timeUnix: DateTime.now().millisecondsSinceEpoch,
-      iconCode: Icons.delete_outline_rounded.codePoint,
-      isPositive: 0,
-      metadata: {'name': buyerName},
-    ));
+    await _logActivity(
+      ActivityLogModel(
+        userId: userId,
+        title: 'Ledger Entry Deleted',
+        subtitle: '$buyerName - $entryType',
+        value: 'Removed',
+        timeUnix: DateTime.now().millisecondsSinceEpoch,
+        iconCode: Icons.delete_outline_rounded.codePoint,
+        isPositive: 0,
+        metadata: {'name': buyerName},
+      ),
+    );
   }
 
   /// Logs a payment collected from a buyer.
@@ -245,16 +263,18 @@ class ActivityLogProvider extends ChangeNotifier {
     required String buyerName,
     required String amountString,
   }) async {
-    await _logActivity(ActivityLogModel(
-      userId: userId,
-      title: 'Payment Received',
-      subtitle: buyerName,
-      value: 'Rs $amountString',
-      timeUnix: DateTime.now().millisecondsSinceEpoch,
-      iconCode: Icons.payments_rounded.codePoint,
-      isPositive: 1,
-      metadata: {'name': buyerName},
-    ));
+    await _logActivity(
+      ActivityLogModel(
+        userId: userId,
+        title: 'Payment Received',
+        subtitle: buyerName,
+        value: 'Rs $amountString',
+        timeUnix: DateTime.now().millisecondsSinceEpoch,
+        iconCode: Icons.payments_rounded.codePoint,
+        isPositive: 1,
+        metadata: {'name': buyerName},
+      ),
+    );
   }
 
   /// Logs an advance payment given to a buyer.
@@ -263,16 +283,18 @@ class ActivityLogProvider extends ChangeNotifier {
     required String buyerName,
     required String amountString,
   }) async {
-    await _logActivity(ActivityLogModel(
-      userId: userId,
-      title: 'Advance Given',
-      subtitle: buyerName,
-      value: 'Rs $amountString',
-      timeUnix: DateTime.now().millisecondsSinceEpoch,
-      iconCode: Icons.money_off_rounded.codePoint,
-      isPositive: 0,
-      metadata: {'name': buyerName},
-    ));
+    await _logActivity(
+      ActivityLogModel(
+        userId: userId,
+        title: 'Advance Given',
+        subtitle: buyerName,
+        value: 'Rs $amountString',
+        timeUnix: DateTime.now().millisecondsSinceEpoch,
+        iconCode: Icons.money_off_rounded.codePoint,
+        isPositive: 0,
+        metadata: {'name': buyerName},
+      ),
+    );
   }
 
   // ══════════════════════════════════════════════════════════════════════════
@@ -286,16 +308,18 @@ class ActivityLogProvider extends ChangeNotifier {
     required String status,
     String? name,
   }) async {
-    await _logActivity(ActivityLogModel(
-      userId: userId,
-      title: 'New Cow Added',
-      subtitle: 'Tag: $tagNumber',
-      value: status,
-      timeUnix: DateTime.now().millisecondsSinceEpoch,
-      iconCode: Icons.pets.codePoint,
-      isPositive: 1,
-      metadata: {'name': name, 'tag': tagNumber},
-    ));
+    await _logActivity(
+      ActivityLogModel(
+        userId: userId,
+        title: 'New Cow Added',
+        subtitle: 'Tag: $tagNumber',
+        value: status,
+        timeUnix: DateTime.now().millisecondsSinceEpoch,
+        iconCode: Icons.pets.codePoint,
+        isPositive: 1,
+        metadata: {'name': name, 'tag': tagNumber},
+      ),
+    );
   }
 
   /// Logs daily milk yield recorded for a cow.
@@ -307,16 +331,33 @@ class ActivityLogProvider extends ChangeNotifier {
     required String sessionStr,
     required String date,
   }) async {
-    await _logActivity(ActivityLogModel(
-      userId: userId,
-      title: 'Milk Recorded',
-      subtitle: 'Added entry for Cow: $cowName (Tag: $tagNumber)',
-      value: '${totalKg.toStringAsFixed(1)} Kg ($sessionStr)',
-      timeUnix: DateTime.now().millisecondsSinceEpoch,
-      iconCode: Icons.water_drop.codePoint,
-      isPositive: 1,
-      metadata: {'tag': tagNumber, 'date': date},
-    ));
+    final cleanName =
+        (cowName != null &&
+            cowName.trim().isNotEmpty &&
+            cowName.trim() != 'null')
+        ? cowName.trim()
+        : null;
+    final subtitleStr = cleanName != null
+        ? 'Added entry for Cow: $cleanName (#$tagNumber)'
+        : 'Added entry for Cow #$tagNumber';
+
+    await _logActivity(
+      ActivityLogModel(
+        userId: userId,
+        title: 'Milk Recorded',
+        subtitle: subtitleStr,
+        value: '${totalKg.toStringAsFixed(1)} Kg ($sessionStr)',
+        timeUnix: DateTime.now().millisecondsSinceEpoch,
+        iconCode: Icons.water_drop.codePoint,
+        isPositive: 1,
+        metadata: {
+          'name': cleanName,
+          'tag': tagNumber,
+          'date': date,
+          'session': sessionStr,
+        },
+      ),
+    );
   }
 
   /// Logs a cow's milk yield session being deleted.
@@ -326,16 +367,18 @@ class ActivityLogProvider extends ChangeNotifier {
     required String session,
     required String date,
   }) async {
-    await _logActivity(ActivityLogModel(
-      userId: userId,
-      title: 'Milk Yield Session Removed',
-      subtitle: 'Cow: $cowLabel',
-      value: '$session Session ($date)',
-      timeUnix: DateTime.now().millisecondsSinceEpoch,
-      iconCode: Icons.remove_circle_outline.codePoint,
-      isPositive: 0,
-      metadata: {'session': session, 'date': date},
-    ));
+    await _logActivity(
+      ActivityLogModel(
+        userId: userId,
+        title: 'Milk Entry Deleted',
+        subtitle: 'Cow: $cowLabel',
+        value: '$session Session ',
+        timeUnix: DateTime.now().millisecondsSinceEpoch,
+        iconCode: Icons.remove_circle_outline.codePoint,
+        isPositive: 0,
+        metadata: {'session': session, 'date': date},
+      ),
+    );
   }
 
   /// Logs a cow's general details being updated.
@@ -346,16 +389,18 @@ class ActivityLogProvider extends ChangeNotifier {
     String? name,
     String? tagNumber,
   }) async {
-    await _logActivity(ActivityLogModel(
-      userId: userId,
-      title: 'Cow Updated',
-      subtitle: label,
-      value: status,
-      timeUnix: DateTime.now().millisecondsSinceEpoch,
-      iconCode: Icons.edit.codePoint,
-      isPositive: 1,
-      metadata: {'name': name, 'tag': tagNumber},
-    ));
+    await _logActivity(
+      ActivityLogModel(
+        userId: userId,
+        title: 'Cow Updated',
+        subtitle: label,
+        value: status,
+        timeUnix: DateTime.now().millisecondsSinceEpoch,
+        iconCode: Icons.edit.codePoint,
+        isPositive: 1,
+        metadata: {'name': name, 'tag': tagNumber},
+      ),
+    );
   }
 
   /// Logs a mating event being recorded for a cow.
@@ -366,16 +411,22 @@ class ActivityLogProvider extends ChangeNotifier {
     String? name,
     String? tagNumber,
   }) async {
-    await _logActivity(ActivityLogModel(
-      userId: userId,
-      title: 'Mating Recorded',
-      subtitle: '$label — Mating Recorded (Awaiting Confirmation)',
-      value: '$matingDate (Pending Confirmation)',
-      timeUnix: DateTime.now().millisecondsSinceEpoch,
-      iconCode: Icons.favorite.codePoint,
-      isPositive: 1,
-      metadata: {'name': name, 'tag': tagNumber, 'status': 'PENDING_CONFIRMATION'},
-    ));
+    await _logActivity(
+      ActivityLogModel(
+        userId: userId,
+        title: 'Mating Recorded',
+        subtitle: '$label — Mating Recorded (Awaiting Confirmation)',
+        value: '$matingDate (Pending Confirmation)',
+        timeUnix: DateTime.now().millisecondsSinceEpoch,
+        iconCode: Icons.favorite.codePoint,
+        isPositive: 1,
+        metadata: {
+          'name': name,
+          'tag': tagNumber,
+          'status': 'PENDING_CONFIRMATION',
+        },
+      ),
+    );
   }
 
   /// Logs a cow's status being changed.
@@ -384,16 +435,18 @@ class ActivityLogProvider extends ChangeNotifier {
     required String cowName,
     required String newStatus,
   }) async {
-    await _logActivity(ActivityLogModel(
-      userId: userId,
-      title: 'Status Updated',
-      subtitle: cowName,
-      value: newStatus,
-      timeUnix: DateTime.now().millisecondsSinceEpoch,
-      iconCode: Icons.update.codePoint,
-      isPositive: 1,
-      metadata: {'name': cowName},
-    ));
+    await _logActivity(
+      ActivityLogModel(
+        userId: userId,
+        title: 'Status Updated',
+        subtitle: cowName,
+        value: newStatus,
+        timeUnix: DateTime.now().millisecondsSinceEpoch,
+        iconCode: Icons.update.codePoint,
+        isPositive: 1,
+        metadata: {'name': cowName},
+      ),
+    );
   }
 
   /// Logs a calving event for a cow.
@@ -401,16 +454,18 @@ class ActivityLogProvider extends ChangeNotifier {
     required int userId,
     required String cowName,
   }) async {
-    await _logActivity(ActivityLogModel(
-      userId: userId,
-      title: 'Calving Recorded',
-      subtitle: cowName,
-      value: 'Now Milking',
-      timeUnix: DateTime.now().millisecondsSinceEpoch,
-      iconCode: Icons.child_care.codePoint,
-      isPositive: 1,
-      metadata: {'name': cowName},
-    ));
+    await _logActivity(
+      ActivityLogModel(
+        userId: userId,
+        title: 'Calving Recorded',
+        subtitle: cowName,
+        value: 'Now Milking',
+        timeUnix: DateTime.now().millisecondsSinceEpoch,
+        iconCode: Icons.child_care.codePoint,
+        isPositive: 1,
+        metadata: {'name': cowName},
+      ),
+    );
   }
 
   /// Logs a pregnancy being ended (mid-term loss).
@@ -425,16 +480,22 @@ class ActivityLogProvider extends ChangeNotifier {
         ? '$label — Mid-term loss logged (Reverted to Milking)'
         : '$label — Mid-term loss logged (Reverted to Heifer)';
 
-    await _logActivity(ActivityLogModel(
-      userId: userId,
-      title: 'Pregnancy Ended',
-      subtitle: subtitleStr,
-      value: 'Mid-term loss logged (Reverted to $resetStatus)',
-      timeUnix: DateTime.now().millisecondsSinceEpoch,
-      iconCode: Icons.warning_amber_rounded.codePoint,
-      isPositive: 0,
-      metadata: {'name': name, 'tag': tagNumber, 'revertedStatus': resetStatus},
-    ));
+    await _logActivity(
+      ActivityLogModel(
+        userId: userId,
+        title: 'Pregnancy Ended',
+        subtitle: subtitleStr,
+        value: 'Mid-term loss logged (Reverted to $resetStatus)',
+        timeUnix: DateTime.now().millisecondsSinceEpoch,
+        iconCode: Icons.warning_amber_rounded.codePoint,
+        isPositive: 0,
+        metadata: {
+          'name': name,
+          'tag': tagNumber,
+          'revertedStatus': resetStatus,
+        },
+      ),
+    );
   }
 
   /// Logs a pregnancy confirmation.
@@ -446,16 +507,18 @@ class ActivityLogProvider extends ChangeNotifier {
     String? name,
     String? tagNumber,
   }) async {
-    await _logActivity(ActivityLogModel(
-      userId: userId,
-      title: 'Pregnancy Confirmed',
-      subtitle: '$label — Confirmed by $method',
-      value: '$targetStatus ($method)',
-      timeUnix: DateTime.now().millisecondsSinceEpoch,
-      iconCode: Icons.favorite.codePoint,
-      isPositive: 1,
-      metadata: {'name': name, 'tag': tagNumber, 'method': method},
-    ));
+    await _logActivity(
+      ActivityLogModel(
+        userId: userId,
+        title: 'Pregnancy Confirmed',
+        subtitle: '$label — Confirmed by $method',
+        value: '$targetStatus ($method)',
+        timeUnix: DateTime.now().millisecondsSinceEpoch,
+        iconCode: Icons.favorite.codePoint,
+        isPositive: 1,
+        metadata: {'name': name, 'tag': tagNumber, 'method': method},
+      ),
+    );
   }
 
   /// Logs a confirmation method override (e.g. AUTO → VET).
@@ -467,16 +530,23 @@ class ActivityLogProvider extends ChangeNotifier {
     String? name,
     String? tagNumber,
   }) async {
-    await _logActivity(ActivityLogModel(
-      userId: userId,
-      title: 'Confirmation Method Updated',
-      subtitle: '$label — Updated from $oldMethod to $newMethod',
-      value: 'Method Override ($oldMethod → $newMethod)',
-      timeUnix: DateTime.now().millisecondsSinceEpoch,
-      iconCode: Icons.edit_note_rounded.codePoint,
-      isPositive: 1,
-      metadata: {'name': name, 'tag': tagNumber, 'oldMethod': oldMethod, 'newMethod': newMethod},
-    ));
+    await _logActivity(
+      ActivityLogModel(
+        userId: userId,
+        title: 'Confirmation Method Updated',
+        subtitle: '$label — Updated from $oldMethod to $newMethod',
+        value: 'Method Override ($oldMethod → $newMethod)',
+        timeUnix: DateTime.now().millisecondsSinceEpoch,
+        iconCode: Icons.edit_note_rounded.codePoint,
+        isPositive: 1,
+        metadata: {
+          'name': name,
+          'tag': tagNumber,
+          'oldMethod': oldMethod,
+          'newMethod': newMethod,
+        },
+      ),
+    );
   }
 
   /// Logs a heat repeat (mating failure) event.
@@ -487,16 +557,18 @@ class ActivityLogProvider extends ChangeNotifier {
     String? name,
     String? tagNumber,
   }) async {
-    await _logActivity(ActivityLogModel(
-      userId: userId,
-      title: 'Heat Repeated',
-      subtitle: label,
-      value: 'Reset to $resetStatus (Not Pregnant)',
-      timeUnix: DateTime.now().millisecondsSinceEpoch,
-      iconCode: Icons.refresh_rounded.codePoint,
-      isPositive: 0,
-      metadata: {'name': name, 'tag': tagNumber},
-    ));
+    await _logActivity(
+      ActivityLogModel(
+        userId: userId,
+        title: 'Heat Repeated',
+        subtitle: label,
+        value: 'Reset to $resetStatus (Not Pregnant)',
+        timeUnix: DateTime.now().millisecondsSinceEpoch,
+        iconCode: Icons.refresh_rounded.codePoint,
+        isPositive: 0,
+        metadata: {'name': name, 'tag': tagNumber},
+      ),
+    );
   }
 
   /// Logs a cow being soft-deleted from the herd.
@@ -505,16 +577,18 @@ class ActivityLogProvider extends ChangeNotifier {
     required String cowName,
     required String reason,
   }) async {
-    await _logActivity(ActivityLogModel(
-      userId: userId,
-      title: 'Cow Removed',
-      subtitle: cowName,
-      value: reason,
-      timeUnix: DateTime.now().millisecondsSinceEpoch,
-      iconCode: Icons.remove_circle_outline.codePoint,
-      isPositive: 0,
-      metadata: {'name': cowName},
-    ));
+    await _logActivity(
+      ActivityLogModel(
+        userId: userId,
+        title: 'Cow Removed',
+        subtitle: cowName,
+        value: reason,
+        timeUnix: DateTime.now().millisecondsSinceEpoch,
+        iconCode: Icons.remove_circle_outline.codePoint,
+        isPositive: 0,
+        metadata: {'name': cowName},
+      ),
+    );
   }
 
   // ══════════════════════════════════════════════════════════════════════════
@@ -528,16 +602,18 @@ class ActivityLogProvider extends ChangeNotifier {
     required String farmerName,
     required String username,
   }) async {
-    await _logActivity(ActivityLogModel(
-      userId: userId,
-      title: 'Farm Account Registered',
-      subtitle: farmName,
-      value: 'Owner: $farmerName',
-      timeUnix: DateTime.now().millisecondsSinceEpoch,
-      iconCode: Icons.storefront_rounded.codePoint,
-      isPositive: 1,
-      metadata: {'username': username, 'farmName': farmName},
-    ));
+    await _logActivity(
+      ActivityLogModel(
+        userId: userId,
+        title: 'Farm Account Registered',
+        subtitle: farmName,
+        value: 'Owner: $farmerName',
+        timeUnix: DateTime.now().millisecondsSinceEpoch,
+        iconCode: Icons.storefront_rounded.codePoint,
+        isPositive: 1,
+        metadata: {'username': username, 'farmName': farmName},
+      ),
+    );
   }
 
   /// Logs a farmer logging into the app.
@@ -545,16 +621,18 @@ class ActivityLogProvider extends ChangeNotifier {
     required int userId,
     required String name,
   }) async {
-    await _logActivity(ActivityLogModel(
-      userId: userId,
-      title: 'Farmer Logged In',
-      subtitle: 'Welcome back, $name',
-      value: 'Active Session',
-      timeUnix: DateTime.now().millisecondsSinceEpoch,
-      iconCode: Icons.login_rounded.codePoint,
-      isPositive: 1,
-      metadata: {},
-    ));
+    await _logActivity(
+      ActivityLogModel(
+        userId: userId,
+        title: 'Farmer Logged In',
+        subtitle: 'Welcome back, $name',
+        value: 'Active Session',
+        timeUnix: DateTime.now().millisecondsSinceEpoch,
+        iconCode: Icons.login_rounded.codePoint,
+        isPositive: 1,
+        metadata: {},
+      ),
+    );
   }
 
   /// Logs a farmer logging out of the app.
@@ -562,15 +640,17 @@ class ActivityLogProvider extends ChangeNotifier {
     required int userId,
     required String name,
   }) async {
-    await _logActivity(ActivityLogModel(
-      userId: userId,
-      title: 'Farmer Logged Out',
-      subtitle: 'Session ended for $name',
-      value: 'Session Ended',
-      timeUnix: DateTime.now().millisecondsSinceEpoch,
-      iconCode: Icons.logout_rounded.codePoint,
-      isPositive: 0,
-      metadata: {},
-    ));
+    await _logActivity(
+      ActivityLogModel(
+        userId: userId,
+        title: 'Farmer Logged Out',
+        subtitle: 'Session ended for $name',
+        value: 'Session Ended',
+        timeUnix: DateTime.now().millisecondsSinceEpoch,
+        iconCode: Icons.logout_rounded.codePoint,
+        isPositive: 0,
+        metadata: {},
+      ),
+    );
   }
 }
