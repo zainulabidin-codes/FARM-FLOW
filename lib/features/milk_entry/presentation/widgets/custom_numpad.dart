@@ -224,13 +224,16 @@ class _NumpadButtonState extends State<_NumpadButton>
     // The decimal point is rendered smaller so it aligns optically.
     final bool isDecimal = widget.numpadKey == NumpadKey.decimal;
 
-    return Text(
-      char,
-      style: TextStyle(
-        color: AppColors.textDark,
-        fontSize: isDecimal ? 30 : 32,
-        fontWeight: FontWeight.w500,
-        height: 1.0,
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      child: Text(
+        char,
+        style: TextStyle(
+          color: AppColors.textDark,
+          fontSize: isDecimal ? 30 : 32,
+          fontWeight: FontWeight.w500,
+          height: 1.0,
+        ),
       ),
     );
   }

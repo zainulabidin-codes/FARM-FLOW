@@ -107,6 +107,7 @@ abstract final class AppTheme {
           backgroundColor: AppColors.deepGreen,
           foregroundColor: AppColors.cardWhite,
           elevation: 0,
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
           minimumSize: const Size(double.infinity, 56),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(28),
@@ -124,6 +125,7 @@ abstract final class AppTheme {
         style: OutlinedButton.styleFrom(
           foregroundColor: AppColors.deepGreen,
           side: const BorderSide(color: AppColors.deepGreen, width: 1.5),
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
           minimumSize: const Size(double.infinity, 56),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(28),

@@ -375,8 +375,8 @@ class _DateCard extends StatelessWidget {
     final yearStr = '${now.year}';
 
     return Container(
-      width: 52,
-      height: 52,
+      constraints: const BoxConstraints(minWidth: 52, minHeight: 52),
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
       decoration: BoxDecoration(
         color: AppColors.cardWhite,
         borderRadius: BorderRadius.circular(14),
@@ -662,9 +662,8 @@ class _ActivityCard extends StatelessWidget {
               style: TextStyle(color: AppColors.textGrey, fontSize: 14),
             ),
             const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              height: 48,
+            ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 48, minWidth: double.infinity),
               child: ElevatedButton.icon(
                 onPressed: onAddCowTap,
                 icon: const Icon(Icons.add, size: 20),

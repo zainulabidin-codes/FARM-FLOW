@@ -1770,43 +1770,40 @@ class _PendingConfirmationDetailsState extends State<_PendingConfirmationDetails
         // ── Confirm Pregnancy + Heat Repeated buttons (days 21–28) ─────
         if (isConfirmable) ...[
           const SizedBox(height: 12),
-          Row(
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
             children: [
-              Expanded(
-                child: ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.deepGreen,
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  ),
-                  icon: _isActionLoading
-                      ? const SizedBox.shrink()
-                      : const Icon(Icons.favorite_rounded, size: 14),
-                  label: _isActionLoading
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.cardWhite),
-                        )
-                      : const Text('Confirm Pregnancy', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                  onPressed: _isActionLoading ? null : _handleConfirmPregnancy,
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.deepGreen,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                 ),
+                icon: _isActionLoading
+                    ? const SizedBox.shrink()
+                    : const Icon(Icons.favorite_rounded, size: 14),
+                label: _isActionLoading
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.cardWhite),
+                      )
+                    : const Text('Confirm Pregnancy', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                onPressed: _isActionLoading ? null : _handleConfirmPregnancy,
               ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: OutlinedButton.icon(
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.warningRed,
-                    side: const BorderSide(color: AppColors.warningRed),
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  ),
-                  icon: const Icon(Icons.refresh_rounded, size: 14),
-                  label: const Text('Heat Repeated', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                  onPressed: _isActionLoading ? null : _handleHeatRepeated,
+              OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.warningRed,
+                  side: const BorderSide(color: AppColors.warningRed),
+                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                 ),
+                icon: const Icon(Icons.refresh_rounded, size: 14),
+                label: const Text('Heat Repeated', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                onPressed: _isActionLoading ? null : _handleHeatRepeated,
               ),
             ],
           ),

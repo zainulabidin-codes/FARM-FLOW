@@ -424,18 +424,23 @@ class _MilkEntryAppBar extends StatelessWidget implements PreferredSizeWidget {
                 onTap: onDateTap,
                 borderRadius: BorderRadius.circular(8),
                 child: Container(
+                  constraints: const BoxConstraints(maxWidth: 140),
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   decoration: BoxDecoration(
                     color: AppColors.sageTint,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       const Icon(Icons.calendar_today, size: 16, color: AppColors.deepGreen),
                       const SizedBox(width: 6),
-                      Text(
-                        DateFormat('yyyy-MM-dd').format(selectedDate),
-                        style: const TextStyle(color: AppColors.deepGreen, fontWeight: FontWeight.w600, fontSize: 13),
+                      Flexible(
+                        child: Text(
+                          DateFormat('yyyy-MM-dd').format(selectedDate),
+                          style: const TextStyle(color: AppColors.deepGreen, fontWeight: FontWeight.w600, fontSize: 13),
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                     ],
                   ),
@@ -475,9 +480,12 @@ class _QuantityDisplay extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.center,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            AppStrings.weightLabel,
-            style: Theme.of(context).textTheme.labelSmall,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              AppStrings.weightLabel,
+              style: Theme.of(context).textTheme.labelSmall,
+            ),
           ),
           const SizedBox(height: 6),
           FittedBox(

@@ -268,9 +268,8 @@ class _EditCowSheetState extends State<EditCowSheet> {
             ),
             const SizedBox(height: 28),
             // Save button
-            SizedBox(
-              width: double.infinity,
-              height: 56,
+            ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 56, minWidth: double.infinity),
               child: ElevatedButton(
                 onPressed: _saving ? null : _save,
                 style: ElevatedButton.styleFrom(
@@ -437,13 +436,16 @@ class _SegmentTile extends StatelessWidget {
                   ]
                 : null,
           ),
-          child: Text(
-            label,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: isSelected ? Colors.white : AppColors.textDark,
-              fontSize: 14,
-              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              label,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: isSelected ? Colors.white : AppColors.textDark,
+                fontSize: 14,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+              ),
             ),
           ),
         ),

@@ -1431,66 +1431,54 @@ class _AddCowSheetState extends State<_AddCowSheet> {
               ),
               const SizedBox(height: 8),
               if (_hasLactatedBefore == 1) ...[
-                Row(
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
                   children: [
-                    Expanded(
-                      child: _AddPillChip(
-                        label: 'Milking',
-                        isSelected: _selectedStatus == 'MILKING',
-                        onTap: () => setState(() {
-                          _selectedStatus = 'MILKING';
-                          _matingDate = null;
-                        }),
-                      ),
+                    _AddPillChip(
+                      label: 'Milking',
+                      isSelected: _selectedStatus == 'MILKING',
+                      onTap: () => setState(() {
+                        _selectedStatus = 'MILKING';
+                        _matingDate = null;
+                      }),
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: _AddPillChip(
-                        label: 'Pregnant',
-                        isSelected: _selectedStatus == 'PREGNANT',
-                        onTap: () =>
-                            setState(() => _selectedStatus = 'PREGNANT'),
-                      ),
+                    _AddPillChip(
+                      label: 'Pregnant',
+                      isSelected: _selectedStatus == 'PREGNANT',
+                      onTap: () =>
+                          setState(() => _selectedStatus = 'PREGNANT'),
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: _AddPillChip(
-                        label: 'Dry Cow',
-                        isSelected: _selectedStatus == 'DRY',
-                        onTap: () => setState(() => _selectedStatus = 'DRY'),
-                      ),
+                    _AddPillChip(
+                      label: 'Dry Cow',
+                      isSelected: _selectedStatus == 'DRY',
+                      onTap: () => setState(() => _selectedStatus = 'DRY'),
                     ),
                   ],
                 ),
               ] else ...[
-                Row(
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
                   children: [
-                    Expanded(
-                      child: _AddPillChip(
-                        label: 'Young Heifer',
-                        isSelected: _selectedStatus == 'HEIFER',
-                        onTap: () => setState(() {
-                          _selectedStatus = 'HEIFER';
-                          _matingDate = null;
-                        }),
-                      ),
+                    _AddPillChip(
+                      label: 'Young Heifer',
+                      isSelected: _selectedStatus == 'HEIFER',
+                      onTap: () => setState(() {
+                        _selectedStatus = 'HEIFER';
+                        _matingDate = null;
+                      }),
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: _AddPillChip(
-                        label: 'Pregnant Heifer',
-                        isSelected: _selectedStatus == 'BRED_HEIFER',
-                        onTap: () =>
-                            setState(() => _selectedStatus = 'BRED_HEIFER'),
-                      ),
+                    _AddPillChip(
+                      label: 'Pregnant Heifer',
+                      isSelected: _selectedStatus == 'BRED_HEIFER',
+                      onTap: () =>
+                          setState(() => _selectedStatus = 'BRED_HEIFER'),
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: _AddPillChip(
-                        label: 'Dry Heifer',
-                        isSelected: _selectedStatus == 'DRY',
-                        onTap: () => setState(() => _selectedStatus = 'DRY'),
-                      ),
+                    _AddPillChip(
+                      label: 'Dry Heifer',
+                      isSelected: _selectedStatus == 'DRY',
+                      onTap: () => setState(() => _selectedStatus = 'DRY'),
                     ),
                   ],
                 ),

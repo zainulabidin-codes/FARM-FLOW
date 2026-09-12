@@ -54,7 +54,7 @@ class _CowAgePickerState extends State<CowAgePicker> {
         ),
         const SizedBox(height: 8),
         Container(
-          height: 120,
+          height: 180,
           decoration: BoxDecoration(
             color: AppColors.bgGrey,
             borderRadius: BorderRadius.circular(12),
@@ -119,7 +119,7 @@ class _CowAgePickerState extends State<CowAgePicker> {
           Expanded(
             child: CupertinoPicker(
               scrollController: FixedExtentScrollController(initialItem: initialItem),
-              itemExtent: 32.0,
+              itemExtent: 42.0,
               onSelectedItemChanged: onChanged,
               children: List<Widget>.generate(itemCount, (int index) {
                 return Center(
