@@ -3,10 +3,34 @@ import 'package:provider/provider.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../providers/activity_log_provider.dart';
 import '../../data/models/activity_log_model.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 import 'package:intl/intl.dart';
 
-class ActivityLogScreen extends StatelessWidget {
+class ActivityLogScreen extends StatefulWidget {
   const ActivityLogScreen({super.key});
+
+  @override
+  State<ActivityLogScreen> createState() => _ActivityLogScreenState();
+}
+
+class _ActivityLogScreenState extends State<ActivityLogScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final userId = context.read<AuthProvider>().currentUser?.id;
+      if (userId != null) {
+        context.read<ActivityLogProvider>().loadActivities(userId, silent: true);
+      }
+    });
+  }
+
+  Future<void> _handleRefresh() async {
+    final userId = context.read<AuthProvider>().currentUser?.id;
+    if (userId != null) {
+      await context.read<ActivityLogProvider>().loadActivities(userId);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,25 +59,35 @@ class ActivityLogScreen extends StatelessWidget {
         ),
         centerTitle: true,
       ),
-      body: provider.isLoading
-          ? const Center(child: CircularProgressIndicator(color: AppColors.sageGreen))
-          : activities.isEmpty
-              ? const Center(
-                  child: Text(
-                    'No activity yet.',
-                    style: TextStyle(color: AppColors.textGrey, fontSize: 16),
+      body: RefreshIndicator(
+        color: AppColors.sageGreen,
+        onRefresh: _handleRefresh,
+        child: provider.isLoading && activities.isEmpty
+            ? const Center(child: CircularProgressIndicator(color: AppColors.sageGreen))
+            : activities.isEmpty
+                ? ListView(
+                    physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+                    children: const [
+                      SizedBox(height: 120),
+                      Center(
+                        child: Text(
+                          'No activity yet.',
+                          style: TextStyle(color: AppColors.textGrey, fontSize: 16),
+                        ),
+                      ),
+                    ],
+                  )
+                : ListView.separated(
+                    physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+                    itemCount: activities.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 12),
+                    itemBuilder: (context, index) {
+                      final activity = activities[index];
+                      return _ExpandableActivityCard(activity: activity);
+                    },
                   ),
-                )
-              : ListView.separated(
-                  physics: const BouncingScrollPhysics(),
-                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
-                  itemCount: activities.length,
-                  separatorBuilder: (_, _) => const SizedBox(height: 12),
-                  itemBuilder: (context, index) {
-                    final activity = activities[index];
-                    return _ExpandableActivityCard(activity: activity);
-                  },
-                ),
+      ),
     );
   }
 }

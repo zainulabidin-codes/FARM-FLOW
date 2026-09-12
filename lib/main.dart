@@ -55,33 +55,35 @@ class DairyFarmApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
-      providers: [
-        // Auth — must be first; other providers may depend on the logged-in userId.
-        ChangeNotifierProvider<AuthProvider>(
-          create: (_) => AuthProvider(repository: AuthRepository()),
-        ),
+              providers: [
+          // Auth must be first
+          ChangeNotifierProvider<AuthProvider>(
+            create: (_) => AuthProvider(repository: AuthRepository()),
+          ),
 
-        // Dodi / Ledger
-        ChangeNotifierProvider<DodiProvider>(
-          create: (_) => DodiProvider(repository: DodiRepository()),
-        ),
+          // Activity Log must be second so others can proxy it
+          ChangeNotifierProvider<ActivityLogProvider>(
+            create: (_) => ActivityLogProvider(),
+          ),
 
-        // Cows & Breeding
-        ChangeNotifierProvider<CowProvider>(
-          create: (_) => CowProvider(repository: CowRepository()),
-        ),
+          // Dodi / Ledger
+          ChangeNotifierProxyProvider<ActivityLogProvider, DodiProvider>(
+            create: (_) => DodiProvider(repository: DodiRepository()),
+            update: (_, activityProvider, previous) => previous!..setActivityProvider(activityProvider),
+          ),
 
-        // Milk Entry
-        ChangeNotifierProvider<MilkEntryProvider>(
-          create: (_) =>
-              MilkEntryProvider(repository: MilkEntryRepository()),
-        ),
+          // Cows & Breeding
+          ChangeNotifierProxyProvider<ActivityLogProvider, CowProvider>(
+            create: (_) => CowProvider(repository: CowRepository()),
+            update: (_, activityProvider, previous) => previous!..setActivityProvider(activityProvider),
+          ),
 
-        // Activity Log
-        ChangeNotifierProvider<ActivityLogProvider>(
-          create: (_) => ActivityLogProvider(),
-        ),
-      ],
+          // Milk Entry
+          ChangeNotifierProxyProvider<ActivityLogProvider, MilkEntryProvider>(
+            create: (_) => MilkEntryProvider(repository: MilkEntryRepository()),
+            update: (_, activityProvider, previous) => previous!..setActivityProvider(activityProvider),
+          ),
+        ],
       child: MaterialApp(
         title: 'Farm Flow',
         debugShowCheckedModeBanner: false,

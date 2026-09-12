@@ -9,6 +9,7 @@ import '../models/cow_ui_model.dart';
 import 'log_yields_screen.dart';
 import 'package:provider/provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../dashboard/presentation/providers/activity_log_provider.dart';
 import '../providers/cow_provider.dart' hide CowStatus;
 import 'edit_cow_sheet.dart';
 
@@ -932,6 +933,7 @@ class _MilkingDetailsState extends State<_MilkingDetails> {
 
       if (success) {
         AppToast.showSuccess(context, 'Mating recorded successfully for ${widget.cow.name}.');
+        context.read<ActivityLogProvider>().loadActivities(userId, silent: true);
       } else {
         AppToast.showError(context, 'Failed to record mating.');
       }
@@ -952,6 +954,7 @@ class _MilkingDetailsState extends State<_MilkingDetails> {
       if (!mounted) return;
       if (success) {
         AppToast.showSuccess(context, '❤️ Pregnancy confirmed for ${widget.cow.name}!');
+        context.read<ActivityLogProvider>().loadActivities(userId, silent: true);
       } else {
         AppToast.showError(context, 'Failed to confirm pregnancy.');
       }
@@ -972,6 +975,7 @@ class _MilkingDetailsState extends State<_MilkingDetails> {
       if (!mounted) return;
       if (success) {
         AppToast.showSuccess(context, '🔄 Heat repeated logged for ${widget.cow.name}. Mating reset.');
+        context.read<ActivityLogProvider>().loadActivities(userId, silent: true);
       } else {
         AppToast.showError(context, 'Failed to update mating state.');
       }
@@ -1625,6 +1629,7 @@ class _PendingConfirmationDetailsState extends State<_PendingConfirmationDetails
       if (mounted) {
         if (success) {
           AppToast.showSuccess(context, '✅ Pregnancy confirmed for Cow #${widget.cow.name}!');
+          context.read<ActivityLogProvider>().loadActivities(cowModel.userId, silent: true);
         } else {
           AppToast.showError(context, cowProvider.errorMessage ?? 'Failed to confirm pregnancy.');
         }
@@ -1651,6 +1656,7 @@ class _PendingConfirmationDetailsState extends State<_PendingConfirmationDetails
       if (!mounted) return;
       if (success) {
         AppToast.showSuccess(context, '🔄 Heat repeated logged for ${widget.cow.name}. Mating reset.');
+        context.read<ActivityLogProvider>().loadActivities(userId, silent: true);
       } else {
         AppToast.showError(context, 'Failed to update mating state.');
       }

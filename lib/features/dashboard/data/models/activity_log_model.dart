@@ -72,9 +72,19 @@ class ActivityLogModel {
     if (iconCode == Icons.person_add_alt_1_rounded.codePoint) return Icons.person_add_alt_1_rounded;
     if (iconCode == Icons.person_remove_alt_1_rounded.codePoint) return Icons.person_remove_alt_1_rounded;
     if (iconCode == Icons.delete_outline_rounded.codePoint) return Icons.delete_outline_rounded;
+    if (iconCode == Icons.delete_forever_rounded.codePoint) return Icons.delete_forever_rounded;
+    if (iconCode == Icons.restore_from_trash_rounded.codePoint) return Icons.restore_from_trash_rounded;
     if (iconCode == Icons.payments_rounded.codePoint) return Icons.payments_rounded;
     if (iconCode == Icons.money_off_rounded.codePoint) return Icons.money_off_rounded;
     if (iconCode == Icons.water_drop_rounded.codePoint) return Icons.water_drop_rounded;
+    if (iconCode == Icons.water_drop.codePoint) return Icons.water_drop;
+    if (iconCode == Icons.edit.codePoint) return Icons.edit;
+    if (iconCode == Icons.edit_note_rounded.codePoint) return Icons.edit_note_rounded;
+    if (iconCode == Icons.warning_amber_rounded.codePoint) return Icons.warning_amber_rounded;
+    if (iconCode == Icons.refresh_rounded.codePoint) return Icons.refresh_rounded;
+    if (iconCode == Icons.storefront_rounded.codePoint) return Icons.storefront_rounded;
+    if (iconCode == Icons.login_rounded.codePoint) return Icons.login_rounded;
+    if (iconCode == Icons.logout_rounded.codePoint) return Icons.logout_rounded;
     return Icons.info_outline;
   }
 }

@@ -1,10 +1,8 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart' show Icons;
 
+import '../../data/models/ledger_entry_model.dart';
 import '../../data/repositories/milk_entry_repository.dart';
-import '../../../dashboard/data/models/activity_log_model.dart';
-import '../../../dashboard/data/repositories/activity_log_repository.dart';
-import 'package:dairy_farm_app/features/milk_entry/data/models/ledger_entry_model.dart';
+import '../../../dashboard/presentation/providers/activity_log_provider.dart';
 
 /// Loading state for milk entry operations.
 enum MilkEntryStatus { idle, loading, success, error }
@@ -18,10 +16,14 @@ enum MilkEntryStatus { idle, loading, success, error }
 ///     update without a manual refresh.
 class MilkEntryProvider extends ChangeNotifier {
   final MilkEntryRepository _repository;
-  final ActivityLogRepository _activityRepo = ActivityLogRepository();
+  ActivityLogProvider? _activityLogProvider;
 
   MilkEntryProvider({MilkEntryRepository? repository})
       : _repository = repository ?? MilkEntryRepository();
+
+  void setActivityProvider(ActivityLogProvider provider) {
+    _activityLogProvider = provider;
+  }
 
   // ── State ─────────────────────────────────────────────────────────────────
 
@@ -101,18 +103,13 @@ class MilkEntryProvider extends ChangeNotifier {
         loadTag: loadTag,
       );
 
-      await _activityRepo.logActivity(ActivityLogModel(
-        userId: userId,
-        title: 'Milk Entry Added',
-        subtitle: buyerName,
-        value: '$quantityString Kg',
-        timeUnix: DateTime.now().millisecondsSinceEpoch,
-        iconCode: Icons.water_drop_rounded.codePoint,
-        isPositive: 1,
-        metadata: {
-          'name': buyerName,
-        },
-      ));
+      if (_activityLogProvider != null) {
+        await _activityLogProvider!.logMilkEntryAdded(
+          userId: userId,
+          buyerName: buyerName,
+          quantityString: quantityString,
+        );
+      }
 
       // Refresh today's total immediately after a successful save.
       // This implicitly calls notifyListeners().
@@ -154,18 +151,13 @@ class MilkEntryProvider extends ChangeNotifier {
         loadTag: loadTag,
       );
 
-      await _activityRepo.logActivity(ActivityLogModel(
-        userId: userId,
-        title: 'Milk Entry Updated',
-        subtitle: buyerName,
-        value: '$quantityString Kg',
-        timeUnix: DateTime.now().millisecondsSinceEpoch,
-        iconCode: Icons.edit_note_rounded.codePoint,
-        isPositive: 1,
-        metadata: {
-          'name': buyerName,
-        },
-      ));
+      if (_activityLogProvider != null) {
+        await _activityLogProvider!.logMilkEntryUpdated(
+          userId: userId,
+          buyerName: buyerName,
+          quantityString: quantityString,
+        );
+      }
 
       await _refreshTodaysTotal();
 

@@ -6,7 +6,7 @@ import '../../data/models/dodi_model.dart';
 import '../../data/repositories/dodi_repository.dart';
 import 'package:dairy_farm_app/features/milk_entry/data/models/ledger_entry_model.dart';
 import '../../../dashboard/data/models/activity_log_model.dart';
-import '../../../dashboard/data/repositories/activity_log_repository.dart';
+import '../../../dashboard/presentation/providers/activity_log_provider.dart';
 
 /// Loading state for async dodi operations.
 enum DodiStatus { idle, loading, success, error }
@@ -20,10 +20,14 @@ enum DodiStatus { idle, loading, success, error }
 ///   • Exposes add-dodi and fetch-summary actions.
 class DodiProvider extends ChangeNotifier {
   final DodiRepository _repository;
-  final ActivityLogRepository _activityRepo = ActivityLogRepository();
+  ActivityLogProvider? _activityLogProvider;
 
   DodiProvider({DodiRepository? repository})
       : _repository = repository ?? DodiRepository();
+
+  void setActivityProvider(ActivityLogProvider provider) {
+    _activityLogProvider = provider;
+  }
 
   // ── State ─────────────────────────────────────────────────────────────────
 
@@ -121,18 +125,14 @@ class DodiProvider extends ChangeNotifier {
         ratePaise: ratePaise,
       );
 
-      await _activityRepo.logActivity(ActivityLogModel(
-        userId: userId,
-        title: 'Buyer Added',
-        subtitle: name,
-        value: 'Rate: Rs ${(ratePaise / 100).toStringAsFixed(2)}/Kg',
-        timeUnix: DateTime.now().millisecondsSinceEpoch,
-        iconCode: Icons.person_add_alt_1_rounded.codePoint,
-        isPositive: 1,
-        metadata: {
-          'phone': phone,
-        },
-      ));
+      if (_activityLogProvider != null) {
+        await _activityLogProvider!.logBuyerAdded(
+          userId: userId,
+          name: name,
+          ratePaise: ratePaise,
+          phone: phone,
+        );
+      }
 
       // Reload the full list so the UI reflects the new entry.
       await loadDodis(userId);
@@ -181,18 +181,13 @@ class DodiProvider extends ChangeNotifier {
       );
       await _repository.updateDodi(updatedDodi);
 
-      await _activityRepo.logActivity(ActivityLogModel(
-        userId: userId,
-        title: 'Buyer Updated',
-        subtitle: name,
-        value: 'Details updated',
-        timeUnix: DateTime.now().millisecondsSinceEpoch,
-        iconCode: Icons.edit_note_rounded.codePoint,
-        isPositive: 1,
-        metadata: {
-          'phone': phone,
-        },
-      ));
+      if (_activityLogProvider != null) {
+        await _activityLogProvider!.logBuyerUpdated(
+          userId: userId,
+          name: name,
+          phone: phone,
+        );
+      }
 
       // Reload the full list so the UI reflects the updated entry.
       await loadDodis(userId);
@@ -241,16 +236,7 @@ class DodiProvider extends ChangeNotifier {
 
       await _repository.restoreDodi(dodiId);
 
-      await _activityRepo.logActivity(ActivityLogModel(
-        userId: userId,
-        title: 'Buyer Restored',
-        subtitle: dodiName,
-        value: 'Restored from Bin',
-        timeUnix: DateTime.now().millisecondsSinceEpoch,
-        iconCode: Icons.restore_from_trash_rounded.codePoint,
-        isPositive: 1,
-        metadata: {'name': dodiName},
-      ));
+      if (_activityLogProvider != null) { await _activityLogProvider!.logBuyerRestored(userId: userId, name: dodiName); }
 
       await loadDodis(userId);
       await loadDeletedDodis(userId);
@@ -270,16 +256,12 @@ class DodiProvider extends ChangeNotifier {
       await _repository.softDeleteDodi(dodiId);
 
       if (dodi != null) {
-        await _activityRepo.logActivity(ActivityLogModel(
-          userId: userId,
-          title: 'Buyer Moved to Bin',
-          subtitle: dodi.name,
-          value: 'Moved to Bin',
-          timeUnix: DateTime.now().millisecondsSinceEpoch,
-          iconCode: Icons.delete_outline_rounded.codePoint,
-          isPositive: 0,
-          metadata: {'name': dodi.name},
-        ));
+        if (_activityLogProvider != null) {
+          await _activityLogProvider!.logBuyerMovedToBin(
+            userId: userId,
+            name: dodi.name,
+          );
+        }
       }
 
       _summaryCache.remove(dodiId);
@@ -302,16 +284,7 @@ class DodiProvider extends ChangeNotifier {
       await _repository.hardDeleteDodi(dodiId);
 
       if (dodi != null) {
-        await _activityRepo.logActivity(ActivityLogModel(
-          userId: userId,
-          title: 'Buyer Permanently Deleted',
-          subtitle: dodi.name,
-          value: 'Permanently Erased',
-          timeUnix: DateTime.now().millisecondsSinceEpoch,
-          iconCode: Icons.delete_forever_rounded.codePoint,
-          isPositive: 0,
-          metadata: {'name': dodi.name},
-        ));
+        if (_activityLogProvider != null) { await _activityLogProvider!.logBuyerPermanentlyDeleted(userId: userId, name: dodi.name); }
       }
 
       _summaryCache.remove(dodiId);
@@ -392,18 +365,7 @@ class DodiProvider extends ChangeNotifier {
       await _repository.deleteLedgerEntry(entryId);
       
       if (entry != null && dodi != null) {
-        await _activityRepo.logActivity(ActivityLogModel(
-          userId: userId,
-          title: 'Ledger Entry Deleted',
-          subtitle: '${dodi.name} - ${entry.type}',
-          value: 'Removed',
-          timeUnix: DateTime.now().millisecondsSinceEpoch,
-          iconCode: Icons.delete_outline_rounded.codePoint,
-          isPositive: 0,
-          metadata: {
-            'name': dodi.name,
-          },
-        ));
+        if (_activityLogProvider != null) { await _activityLogProvider!.logLedgerEntryDeleted(userId: userId, buyerName: '${dodi.name} - ${entry.type}', entryType: 'Removed'); }
       }
 
       await refreshDodi(dodiId);
@@ -421,18 +383,13 @@ class DodiProvider extends ChangeNotifier {
       
       final dodi = _dodis.where((d) => d.id == dodiId).firstOrNull;
       if (dodi != null) {
-        await _activityRepo.logActivity(ActivityLogModel(
-          userId: userId,
-          title: 'Payment Received',
-          subtitle: dodi.name,
-          value: 'Rs $amountString',
-          timeUnix: DateTime.now().millisecondsSinceEpoch,
-          iconCode: Icons.payments_rounded.codePoint,
-          isPositive: 1,
-          metadata: {
-            'name': dodi.name,
-          },
-        ));
+        if (_activityLogProvider != null) {
+          await _activityLogProvider!.logPaymentReceived(
+            userId: userId,
+            buyerName: dodi.name,
+            amountString: amountString,
+          );
+        }
       }
 
       await refreshDodi(dodiId);
@@ -452,18 +409,13 @@ class DodiProvider extends ChangeNotifier {
 
       final dodi = _dodis.where((d) => d.id == dodiId).firstOrNull;
       if (dodi != null) {
-        await _activityRepo.logActivity(ActivityLogModel(
-          userId: userId,
-          title: 'Advance Given',
-          subtitle: dodi.name,
-          value: 'Rs $amountString',
-          timeUnix: DateTime.now().millisecondsSinceEpoch,
-          iconCode: Icons.money_off_rounded.codePoint,
-          isPositive: 0,
-          metadata: {
-            'name': dodi.name,
-          },
-        ));
+        if (_activityLogProvider != null) {
+          await _activityLogProvider!.logAdvanceGiven(
+            userId: userId,
+            buyerName: dodi.name,
+            amountString: amountString,
+          );
+        }
       }
 
       await refreshDodi(dodiId);

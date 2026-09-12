@@ -2,6 +2,9 @@ import 'package:flutter/foundation.dart';
 
 import '../../data/models/user_model.dart';
 import '../../data/repositories/auth_repository.dart';
+import '../../../dashboard/data/repositories/activity_log_repository.dart';
+import '../../../dashboard/data/models/activity_log_model.dart';
+import 'package:flutter/material.dart' show Icons;
 
 /// UI state for an in-flight auth operation.
 enum AuthStatus {
@@ -24,6 +27,7 @@ enum AuthStatus {
 /// The UI watches [status], [currentUser], and [errorMessage].
 class AuthProvider extends ChangeNotifier {
   final AuthRepository _repository;
+  final ActivityLogRepository _activityRepo = ActivityLogRepository();
 
   AuthProvider({AuthRepository? repository})
       : _repository = repository ?? AuthRepository();
@@ -77,6 +81,19 @@ class AuthProvider extends ChangeNotifier {
     switch (result) {
       case AuthSuccess(:final user):
         _setSuccess(user);
+        // Log farm registration activity (non-blocking).
+        try {
+          await _activityRepo.logActivity(ActivityLogModel(
+            userId: user.id!,
+            title: 'Farm Account Registered',
+            subtitle: farmName,
+            value: 'Owner: $farmerName',
+            timeUnix: DateTime.now().millisecondsSinceEpoch,
+            iconCode: Icons.storefront_rounded.codePoint,
+            isPositive: 1,
+            metadata: {'username': username, 'farmName': farmName},
+          ));
+        } catch (_) {}
       case AuthFailure(:final message):
         _setError(message);
     }
@@ -91,6 +108,20 @@ class AuthProvider extends ChangeNotifier {
     switch (result) {
       case AuthSuccess(:final user):
         _setSuccess(user);
+        // Log login activity (non-blocking).
+        try {
+          final displayName = user.farmerName ?? user.username;
+          await _activityRepo.logActivity(ActivityLogModel(
+            userId: user.id!,
+            title: 'Farmer Logged In',
+            subtitle: 'Welcome back, $displayName',
+            value: 'Active Session',
+            timeUnix: DateTime.now().millisecondsSinceEpoch,
+            iconCode: Icons.login_rounded.codePoint,
+            isPositive: 1,
+            metadata: {'username': user.username},
+          ));
+        } catch (_) {}
       case AuthFailure(:final message):
         _setError(message);
     }
@@ -112,10 +143,30 @@ class AuthProvider extends ChangeNotifier {
   }
 
   /// Logs out the current user and resets all state.
-  void logout() {
+  Future<void> logout() async {
+    // Capture user info before clearing state.
+    final user = _currentUser;
+
     _currentUser = null;
     _status = AuthStatus.idle;
     _errorMessage = null;
     notifyListeners();
+
+    // Log logout activity (non-blocking).
+    if (user != null && user.id != null) {
+      try {
+        final displayName = user.farmerName ?? user.username;
+        await _activityRepo.logActivity(ActivityLogModel(
+          userId: user.id!,
+          title: 'Farmer Logged Out',
+          subtitle: 'Session ended for $displayName',
+          value: 'Session Ended',
+          timeUnix: DateTime.now().millisecondsSinceEpoch,
+          iconCode: Icons.logout_rounded.codePoint,
+          isPositive: 0,
+          metadata: {'username': user.username},
+        ));
+      } catch (_) {}
+    }
   }
 }

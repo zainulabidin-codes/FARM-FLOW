@@ -96,6 +96,9 @@ class AppShellState extends State<AppShell> with WidgetsBindingObserver {
         }
       } finally {
         _isMilkEntryOpen = false;
+        if (mounted) {
+          context.read<ActivityLogProvider>().loadActivities(widget.userId, silent: true);
+        }
       }
       return;
     }
@@ -104,11 +107,14 @@ class AppShellState extends State<AppShell> with WidgetsBindingObserver {
       HapticFeedback.selectionClick();
     } catch (_) {}
     setState(() => _currentIndex = index);
+    if (index == 0 && mounted) {
+      context.read<ActivityLogProvider>().loadActivities(widget.userId, silent: true);
+    }
   }
 
   // ── Dodi card tap → DodiDetailScreen ─────────────────────────────────────
 
-  void _onDodiCardTap(String dodiIdStr) {
+  void _onDodiCardTap(String dodiIdStr) async {
     final dodiProvider = Provider.of<DodiProvider>(context, listen: false);
     final dodiId = int.tryParse(dodiIdStr);
     if (dodiId == null) return;
@@ -119,9 +125,12 @@ class AppShellState extends State<AppShell> with WidgetsBindingObserver {
         dodiProvider.deletedDodis.where((d) => d.id == dodiId).firstOrNull;
     if (dodi == null) return;
 
-    Navigator.of(context).push(
+    await Navigator.of(context).push(
       MaterialPageRoute<void>(builder: (_) => DodiDetailScreen(dodi: dodi)),
     );
+    if (mounted) {
+      context.read<ActivityLogProvider>().loadActivities(widget.userId, silent: true);
+    }
   }
 
   void _onDodiCardLongPress(String dodiIdStr) async {

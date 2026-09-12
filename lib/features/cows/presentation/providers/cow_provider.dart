@@ -2,8 +2,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' show Icons;
 
 import '../../data/models/cow_model.dart';
-import '../../data/repositories/cow_repository.dart';
-import '../../../../features/dashboard/data/repositories/activity_log_repository.dart';
+import 'package:dairy_farm_app/features/cows/data/repositories/cow_repository.dart';
+import 'package:dairy_farm_app/features/dashboard/presentation/providers/activity_log_provider.dart';
+import 'package:intl/intl.dart';
 import '../../../../features/dashboard/data/models/activity_log_model.dart';
 
 /// Loading state for async cow operations.
@@ -12,10 +13,14 @@ enum CowStatus { idle, loading, success, error }
 /// ChangeNotifier provider for all Cow-related UI state.
 class CowProvider extends ChangeNotifier {
   final CowRepository _repository;
-  final ActivityLogRepository _activityRepo = ActivityLogRepository();
+  ActivityLogProvider? _activityLogProvider;
 
   CowProvider({CowRepository? repository})
       : _repository = repository ?? CowRepository();
+
+  void setActivityProvider(ActivityLogProvider provider) {
+    _activityLogProvider = provider;
+  }
 
   CowStatus _status = CowStatus.idle;
   CowStatus get status => _status;
@@ -175,18 +180,16 @@ class CowProvider extends ChangeNotifier {
           totalKg += eveningGrams / 1000;
         }
         
-        await _activityRepo.logActivity(
-          ActivityLogModel(
+        if (_activityLogProvider != null) {
+          await _activityLogProvider!.logCowMilkRecorded(
             userId: cow.userId,
-            title: 'Milk Recorded',
-            subtitle: 'Added entry for Cow: ${cow.name} (Tag: ${cow.tagNumber})',
-            value: '${totalKg.toStringAsFixed(1)} Kg ($sessionStr)',
-            timeUnix: DateTime.now().millisecondsSinceEpoch,
-            iconCode: Icons.water_drop.codePoint,
-            isPositive: 1,
-            metadata: {'tag': cow.tagNumber, 'date': date},
-          ),
-        );
+            tagNumber: cow.tagNumber,
+            cowName: cow.name,
+            totalKg: totalKg,
+            sessionStr: 'Daily Total',
+            date: DateTime.now().toIso8601String().split('T')[0],
+          );
+        }
       }
 
       if (_cows.isNotEmpty) {
@@ -220,24 +223,11 @@ class CowProvider extends ChangeNotifier {
           );
 
           final label = (cow.name?.isNotEmpty == true) ? cow.name! : cow.tagNumber;
-          final targetStatus = result['targetStatus']!;
+          
 
-          await _activityRepo.logActivity(
-            ActivityLogModel(
-              userId: userId,
-              title: 'Pregnancy Confirmed',
-              subtitle: '$label — Confirmed by AUTO',
-              value: '$targetStatus (AUTO)',
-              timeUnix: now.millisecondsSinceEpoch,
-              iconCode: Icons.favorite.codePoint,
-              isPositive: 1,
-              metadata: {
-                'name': cow.name,
-                'tag': cow.tagNumber,
-                'method': 'AUTO',
-              },
-            ),
-          );
+          if (_activityLogProvider != null) {
+  await _activityLogProvider!.logPregnancyConfirmed(userId: userId, label: label, targetStatus: 'Pregnant', method: 'AUTO', name: cow.name, tagNumber: cow.tagNumber);
+}
           didConfirmAny = true;
         }
       }
@@ -334,21 +324,14 @@ class CowProvider extends ChangeNotifier {
         confirmationMethod: confirmationMethod,
       );
       
-      await _activityRepo.logActivity(
-        ActivityLogModel(
+      if (_activityLogProvider != null) {
+        await _activityLogProvider!.logCowAdded(
           userId: userId,
-          title: 'New Cow Added',
-          subtitle: 'Tag: $tagNumber',
-          value: status,
-          timeUnix: DateTime.now().millisecondsSinceEpoch,
-          iconCode: Icons.pets.codePoint,
-          isPositive: 1,
-          metadata: {
-            'name': name,
-            'tag': tagNumber,
-          },
-        ),
-      );
+          tagNumber: tagNumber,
+          status: status,
+          name: name,
+        );
+      }
 
       await fetchCows(userId);
       return true;
@@ -385,22 +368,9 @@ class CowProvider extends ChangeNotifier {
       );
       
       final label = (currentCow.name?.isNotEmpty == true) ? currentCow.name! : currentCow.tagNumber;
-      await _activityRepo.logActivity(
-        ActivityLogModel(
-          userId: userId,
-          title: 'Mating Recorded',
-          subtitle: '$label — Mating Recorded (Awaiting Confirmation)',
-          value: '$matingDate (Pending Confirmation)',
-          timeUnix: DateTime.now().millisecondsSinceEpoch,
-          iconCode: Icons.favorite.codePoint,
-          isPositive: 1,
-          metadata: {
-            'name': currentCow.name,
-            'tag': currentCow.tagNumber,
-            'status': 'PENDING_CONFIRMATION',
-          },
-        ),
-      );
+      if (_activityLogProvider != null) {
+  await _activityLogProvider!.logMatingRecorded(userId: userId, label: label, matingDate: matingDate, name: currentCow.name);
+}
 
       await fetchCows(userId);
       return true;
@@ -425,20 +395,9 @@ class CowProvider extends ChangeNotifier {
     try {
       await _repository.updateCowStatus(cowId, newStatus);
       
-      await _activityRepo.logActivity(
-        ActivityLogModel(
-          userId: userId,
-          title: 'Status Updated',
-          subtitle: cowName,
-          value: newStatus,
-          timeUnix: DateTime.now().millisecondsSinceEpoch,
-          iconCode: Icons.update.codePoint,
-          isPositive: 1,
-          metadata: {
-            'name': cowName,
-          },
-        ),
-      );
+      if (_activityLogProvider != null) {
+  await _activityLogProvider!.logCowStatusUpdated(userId: userId, cowName: cowName, newStatus: newStatus);
+}
 
       await fetchCows(userId);
       return true;
@@ -476,21 +435,9 @@ class CowProvider extends ChangeNotifier {
       );
       
       final label = name.isNotEmpty ? name : tagNumber;
-      await _activityRepo.logActivity(
-        ActivityLogModel(
-          userId: userId,
-          title: 'Cow Updated',
-          subtitle: label,
-          value: status,
-          timeUnix: DateTime.now().millisecondsSinceEpoch,
-          iconCode: Icons.edit.codePoint,
-          isPositive: 1,
-          metadata: {
-            'name': name,
-            'tag': tagNumber,
-          },
-        ),
-      );
+      if (_activityLogProvider != null) {
+  await _activityLogProvider!.logCowUpdated(userId: userId, label: label, status: status, name: name);
+}
 
       await fetchCows(userId);
       return true;
@@ -514,20 +461,9 @@ class CowProvider extends ChangeNotifier {
     try {
       await _repository.recordCalving(cowId);
       
-      await _activityRepo.logActivity(
-        ActivityLogModel(
-          userId: userId,
-          title: 'Calving Recorded',
-          subtitle: cowName,
-          value: 'Now Milking',
-          timeUnix: DateTime.now().millisecondsSinceEpoch,
-          iconCode: Icons.child_care.codePoint,
-          isPositive: 1,
-          metadata: {
-            'name': cowName,
-          },
-        ),
-      );
+      if (_activityLogProvider != null) {
+  await _activityLogProvider!.logCalvingRecorded(userId: userId, cowName: cowName);
+}
 
       await fetchCows(userId);
       return true;
@@ -569,22 +505,9 @@ class CowProvider extends ChangeNotifier {
           ? '$label — Mid-term loss logged (Reverted to Milking)'
           : '$label — Mid-term loss logged (Reverted to Heifer)';
 
-      await _activityRepo.logActivity(
-        ActivityLogModel(
-          userId: userId,
-          title: 'Pregnancy Ended',
-          subtitle: subtitleStr,
-          value: 'Mid-term loss logged (Reverted to $resetStatus)',
-          timeUnix: DateTime.now().millisecondsSinceEpoch,
-          iconCode: Icons.warning_amber_rounded.codePoint,
-          isPositive: 0,
-          metadata: {
-            'name': cow?.name,
-            'tag': cow?.tagNumber,
-            'revertedStatus': resetStatus,
-          },
-        ),
-      );
+      if (_activityLogProvider != null) {
+  await _activityLogProvider!.logPregnancyEnded(userId: userId, label: label, resetStatus: resetStatus, name: cow?.name, tagNumber: cow?.tagNumber);
+}
 
       await fetchCows(userId);
       return true;
@@ -623,45 +546,18 @@ class CowProvider extends ChangeNotifier {
       final label = (cow?.name?.isNotEmpty == true) ? cow!.name! : (cow?.tagNumber ?? 'Cow');
       final isFirst = result['isFirstConfirmation'] == 'true';
       final oldMethod = result['oldMethod']!;
-      final targetStatus = result['targetStatus']!;
+      
 
       // Gap 3 & Gap 4: Activity logging with No-Op Guard
       if (isFirst) {
-        await _activityRepo.logActivity(
-          ActivityLogModel(
-            userId: userId,
-            title: 'Pregnancy Confirmed',
-            subtitle: '$label — Confirmed by $method',
-            value: '$targetStatus ($method)',
-            timeUnix: DateTime.now().millisecondsSinceEpoch,
-            iconCode: Icons.favorite.codePoint,
-            isPositive: 1,
-            metadata: {
-              'name': cow?.name,
-              'tag': cow?.tagNumber,
-              'method': method,
-            },
-          ),
-        );
+        if (_activityLogProvider != null) {
+  await _activityLogProvider!.logPregnancyConfirmed(userId: userId, label: label, targetStatus: 'Pregnant', method: method, name: cow?.name, tagNumber: cow?.tagNumber);
+}
       } else if (oldMethod != method) {
         // Real method override (e.g. AUTO -> VET)
-        await _activityRepo.logActivity(
-          ActivityLogModel(
-            userId: userId,
-            title: 'Confirmation Method Updated',
-            subtitle: '$label — Updated from $oldMethod to $method',
-            value: 'Method Override ($oldMethod → $method)',
-            timeUnix: DateTime.now().millisecondsSinceEpoch,
-            iconCode: Icons.edit_note_rounded.codePoint,
-            isPositive: 1,
-            metadata: {
-              'name': cow?.name,
-              'tag': cow?.tagNumber,
-              'oldMethod': oldMethod,
-              'newMethod': method,
-            },
-          ),
-        );
+        if (_activityLogProvider != null) {
+  await _activityLogProvider!.logConfirmationMethodUpdated(userId: userId, label: label, oldMethod: oldMethod, newMethod: method, name: cow?.name, tagNumber: cow?.tagNumber);
+}
       }
       // Gap 4 No-Op Guard: If oldMethod == method on re-call, skip duplicate log.
 
@@ -696,21 +592,9 @@ class CowProvider extends ChangeNotifier {
         estimatedBirthDate: cow?.estimatedBirthDate,
       );
 
-      await _activityRepo.logActivity(
-        ActivityLogModel(
-          userId: userId,
-          title: 'Heat Repeated',
-          subtitle: label,
-          value: 'Reset to $resetStatus (Not Pregnant)',
-          timeUnix: DateTime.now().millisecondsSinceEpoch,
-          iconCode: Icons.refresh_rounded.codePoint,
-          isPositive: 0,
-          metadata: {
-            'name': cow?.name,
-            'tag': cow?.tagNumber,
-          },
-        ),
-      );
+      if (_activityLogProvider != null) {
+  await _activityLogProvider!.logHeatRepeated(userId: userId, label: label, resetStatus: resetStatus, name: cow?.name, tagNumber: cow?.tagNumber);
+}
 
       await fetchCows(userId);
       return true;
@@ -735,20 +619,9 @@ class CowProvider extends ChangeNotifier {
     try {
       await _repository.softDeleteCow(cowId, reason);
       
-      await _activityRepo.logActivity(
-        ActivityLogModel(
-          userId: userId,
-          title: 'Cow Removed',
-          subtitle: cowName,
-          value: reason,
-          timeUnix: DateTime.now().millisecondsSinceEpoch,
-          iconCode: Icons.remove_circle_outline.codePoint,
-          isPositive: 0,
-          metadata: {
-            'name': cowName,
-          },
-        ),
-      );
+      if (_activityLogProvider != null) {
+  await _activityLogProvider!.logCowRemoved(userId: userId, cowName: cowName, reason: reason);
+}
 
       await fetchCows(userId);
       return true;
@@ -784,7 +657,22 @@ class CowProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
+      final cow = _cows.where((c) => c.id == cowId).firstOrNull;
+
       await _repository.deleteMilkSession(cowId, date, session);
+
+      if (cow != null && cow.userId != 0) {
+        final cowLabel = (cow.name?.isNotEmpty == true) ? cow.name! : cow.tagNumber;
+        if (_activityLogProvider != null) {
+          await _activityLogProvider!.logCowMilkSessionDeleted(
+            userId: cow.userId,
+            cowLabel: cowLabel,
+            session: session,
+            date: date,
+          );
+        }
+      }
+
       if (_cows.isNotEmpty) {
         await fetchCows(_cows.first.userId);
       }
