@@ -1,15 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../../../../core/theme/app_theme.dart';
 import '../../../../core/constants/app_strings.dart';
 
 // ---------------------------------------------------------------------------
 // AuthScreen
 // ---------------------------------------------------------------------------
 // Pure UI — no business logic here. All user actions are surfaced via
-// the [onLoginTap] and [onSignupTap] callbacks so the navigation/business
-// layer (wired in Task 7) can respond without touching this widget.
+// the [onLoginTap] and [onSignupTap] callbacks.
 // ---------------------------------------------------------------------------
 
 class AuthScreen extends StatefulWidget {
@@ -61,8 +59,6 @@ class _AuthScreenState extends State<AuthScreen>
       CurvedAnimation(parent: _animController, curve: Curves.easeIn),
     );
 
-    // Start the animation after the first frame so the hero background
-    // is already painted.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _animController.forward();
     });
@@ -96,47 +92,46 @@ class _AuthScreenState extends State<AuthScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // Remove the scaffold's own background so our gradient shows through.
       backgroundColor: Colors.transparent,
-      // Resize to avoid the keyboard pushing the card up awkwardly.
       resizeToAvoidBottomInset: true,
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // ── (1) Background gradient — mimics the lush farm meadow ────────
-          _FarmBackground(),
+          // ── (1) Background gradient ─────────────────────────────────────
+          const _FarmBackground(),
 
-          // ── (2) Top logo + "Welcome Back" text above the card ───────────
+          // ── (2) Scrollable Centered Card Container ───────────────────────
           SafeArea(
-            child: Column(
-              children: [
-                const SizedBox(height: 32),
-                _AppLogoHeader(),
-                // The rest of the space is taken by the scrollable card.
-              ],
-            ),
-          ),
-
-          // ── (3) Animated card ─────────────────────────────────────
-          Positioned.fill(
-            child: Align(
-              alignment: Alignment.center,
-              child: SlideTransition(
-                position: _slideAnim,
-                child: FadeTransition(
-                  opacity: _fadeAnim,
-                  child: _AuthCard(
-                    usernameController: _usernameController,
-                    passwordController: _passwordController,
-                    obscurePassword: _obscurePassword,
-                    onToggleObscure: () {
-                      setState(() => _obscurePassword = !_obscurePassword);
-                    },
-                    onLoginTap: _handleLogin,
-                    onSignupTap: _handleSignup,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 32),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      minHeight: constraints.maxHeight - 64,
+                    ),
+                    child: Center(
+                      child: SlideTransition(
+                        position: _slideAnim,
+                        child: FadeTransition(
+                          opacity: _fadeAnim,
+                          child: _AuthCard(
+                            usernameController: _usernameController,
+                            passwordController: _passwordController,
+                            obscurePassword: _obscurePassword,
+                            onToggleObscure: () {
+                              setState(() => _obscurePassword = !_obscurePassword);
+                            },
+                            onLoginTap: _handleLogin,
+                            onSignupTap: _handleSignup,
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
-                ),
-              ),
+                );
+              },
             ),
           ),
         ],
@@ -147,10 +142,11 @@ class _AuthScreenState extends State<AuthScreen>
 
 // ---------------------------------------------------------------------------
 // _FarmBackground
-// Renders a layered gradient that evokes a sunlit green farm field, as seen
-// in the visual mockup (sky → horizon haze → rich meadow green).
+// Exact gradient stops matching approved reference design
 // ---------------------------------------------------------------------------
 class _FarmBackground extends StatelessWidget {
+  const _FarmBackground();
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -158,48 +154,31 @@ class _FarmBackground extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          stops: [0.0, 0.35, 0.60, 1.0],
+          stops: [0.0, 0.35, 0.70, 1.0],
           colors: [
-            Color(0xFFB8D8E8), // soft sky blue
-            Color(0xFFD6E8C8), // pale horizon haze
-            Color(0xFF6AAF5A), // mid meadow green
-            Color(0xFF3E8B2A), // deep grass green
+            Color(0xFFFCF8FB), // Soft off-white
+            Color(0xFFEEF5F0), // Minty haze horizon
+            Color(0xFF529871), // Meadow green
+            Color(0xFF1B4332), // Deep forest green
           ],
         ),
       ),
       child: Stack(
         children: [
-          // Subtle oval "sun glow" at the top centre.
+          // Bottom ambient grounding gradient band
           Positioned(
-            top: -60,
             left: 0,
             right: 0,
-            child: Center(
-              child: Container(
-                width: 220,
-                height: 220,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white.withValues(alpha: 0.18),
-                ),
-              ),
-            ),
-          ),
-          // Light fog band at the horizon.
-          Positioned(
-            top: 160,
-            left: 0,
-            right: 0,
-            height: 60,
+            bottom: 0,
+            height: 56,
             child: Container(
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.topCenter,
                   colors: [
-                    Colors.white.withValues(alpha: 0.0),
-                    Colors.white.withValues(alpha: 0.22),
-                    Colors.white.withValues(alpha: 0.0),
+                    Color(0x331B4332),
+                    Colors.transparent,
                   ],
                 ),
               ),
@@ -212,71 +191,8 @@ class _FarmBackground extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// _AppLogoHeader
-// Displays the tractor/farm icon and "FarmSync / DairyFarm Pro" branding
-// that appears above the login card in the mockup.
-// ---------------------------------------------------------------------------
-class _AppLogoHeader extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // Shield-style icon background.
-        Container(
-          width: 72,
-          height: 72,
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.90),
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.12),
-                blurRadius: 16,
-                offset: const Offset(0, 6),
-              ),
-            ],
-          ),
-          child: const Icon(
-            Icons.agriculture_rounded,
-            color: AppColors.deepGreen,
-            size: 40,
-          ),
-        ),
-        const SizedBox(height: 12),
-        Text(
-          AppStrings.appName,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 20,
-            fontWeight: FontWeight.w700,
-            letterSpacing: -0.4,
-            shadows: [
-              Shadow(
-                color: Colors.black26,
-                blurRadius: 8,
-                offset: Offset(0, 2),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          'Welcome Back',
-          style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.85),
-            fontSize: 15,
-            fontWeight: FontWeight.w400,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
 // _AuthCard
-// The frosted-glass card that holds all login inputs and action buttons.
+// Main Login card with overlapping dark-green top logo badge
 // ---------------------------------------------------------------------------
 class _AuthCard extends StatelessWidget {
   final TextEditingController usernameController;
@@ -297,126 +213,177 @@ class _AuthCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final mq = MediaQuery.of(context);
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 448),
+      child: Stack(
+        clipBehavior: Clip.none,
+        alignment: Alignment.topCenter,
+        children: [
+          // Main White Card Body
+          Container(
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: const Color(0xF5FFFFFF),
+              borderRadius: BorderRadius.circular(28),
+              boxShadow: const [
+                BoxShadow(
+                  color: Colors.black12,
+                  blurRadius: 32,
+                  offset: Offset(0, 8),
+                ),
+              ],
+            ),
+            padding: const EdgeInsets.fromLTRB(24, 52, 24, 32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // ── Title: Welcome to Farm Flow ────────────────────────────
+                RichText(
+                  textAlign: TextAlign.center,
+                  text: const TextSpan(
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.4,
+                      height: 1.25,
+                    ),
+                    children: [
+                      TextSpan(
+                        text: 'Welcome to ',
+                        style: TextStyle(color: Color(0xFF0F172A)),
+                      ),
+                      TextSpan(
+                        text: 'Farm Flow',
+                        style: TextStyle(color: Color(0xFF1B4332)),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 6),
+                const Text(
+                  'Precision management for the modern herd.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Color(0xFF64748B),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+                const SizedBox(height: 24),
 
-    return Container(
-      // Respect the soft keyboard insets.
-      margin: EdgeInsets.only(bottom: mq.viewInsets.bottom),
-      decoration: const BoxDecoration(
-        color: Color(0xF5FFFFFF), // ~96% white — "frosted" feel
-        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black12,
-            blurRadius: 32,
-            offset: Offset(0, -8),
+                // ── Field 1: Username ──────────────────────────────────────
+                const Text(
+                  'Username',
+                  style: TextStyle(
+                    color: Color(0xFF475569),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                _InputField(
+                  controller: usernameController,
+                  hint: 'Enter your username',
+                  prefixIcon: Icons.person_outline_rounded,
+                  keyboardType: TextInputType.text,
+                  textInputAction: TextInputAction.next,
+                ),
+                const SizedBox(height: 16),
+
+                // ── Field 2: Password ──────────────────────────────────────
+                const Text(
+                  'Password',
+                  style: TextStyle(
+                    color: Color(0xFF475569),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                _InputField(
+                  controller: passwordController,
+                  hint: 'Enter secure password',
+                  prefixIcon: Icons.lock_outline_rounded,
+                  obscureText: obscurePassword,
+                  textInputAction: TextInputAction.done,
+                  onSubmitted: (_) => onLoginTap(),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      obscurePassword
+                          ? Icons.visibility_off_outlined
+                          : Icons.visibility_outlined,
+                      color: const Color(0xFF94A3B8),
+                      size: 20,
+                    ),
+                    onPressed: onToggleObscure,
+                  ),
+                ),
+                const SizedBox(height: 28),
+
+                // ── Primary Login Button ──────────────────────────────────
+                _PrimaryButton(
+                  label: AppStrings.loginButton,
+                  icon: Icons.login_rounded,
+                  onTap: onLoginTap,
+                ),
+                const SizedBox(height: 12),
+
+                // ── Secondary Create Profile Button ────────────────────────
+                _SecondaryButton(
+                  label: AppStrings.createFarmButton,
+                  icon: Icons.person_add_alt_1_rounded,
+                  onTap: onSignupTap,
+                ),
+              ],
+            ),
+          ),
+
+          // Overlapping Dark Green Logo Badge at Top Center of Card
+          Positioned(
+            top: -28,
+            child: Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: const Color(0xFF1B4332),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.white, width: 2.5),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x401B4332),
+                    blurRadius: 16,
+                    offset: Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(13),
+                child: Image.asset(
+                  'assets/images/logo.png',
+                  width: 32,
+                  height: 32,
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) {
+                    return const Icon(
+                      Icons.agriculture_rounded,
+                      color: Colors.white,
+                      size: 30,
+                    );
+                  },
+                ),
+              ),
+            ),
           ),
         ],
-      ),
-      child: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(28, 36, 28, 40),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              // ── Logo icon inside the card ────────────────────────────────
-              Container(
-                width: 72,
-                height: 72,
-                decoration: BoxDecoration(
-                  color: AppColors.sageTint,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.agriculture_rounded,
-                  color: AppColors.deepGreen,
-                  size: 36,
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              // ── Title ────────────────────────────────────────────────────
-              Text(
-                AppStrings.welcomeTitle,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: AppColors.textDark,
-                  fontSize: 24,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -0.5,
-                  height: 1.25,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                AppStrings.appTagline,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: AppColors.textGrey,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w400,
-                ),
-              ),
-              const SizedBox(height: 32),
-
-              // ── Username field ───────────────────────────────────────────
-              _InputField(
-                controller: usernameController,
-                hint: AppStrings.usernameHint,
-                prefixIcon: Icons.person_outline_rounded,
-                keyboardType: TextInputType.text,
-                textInputAction: TextInputAction.next,
-              ),
-              const SizedBox(height: 14),
-
-              // ── Password field ───────────────────────────────────────────
-              _InputField(
-                controller: passwordController,
-                hint: AppStrings.passwordHint,
-                prefixIcon: Icons.lock_outline_rounded,
-                obscureText: obscurePassword,
-                textInputAction: TextInputAction.done,
-                onSubmitted: (_) => onLoginTap(),
-                suffixIcon: IconButton(
-                  icon: Icon(
-                    obscurePassword
-                        ? Icons.visibility_off_outlined
-                        : Icons.visibility_outlined,
-                    color: AppColors.textGrey,
-                    size: 20,
-                  ),
-                  onPressed: onToggleObscure,
-                ),
-              ),
-              const SizedBox(height: 28),
-
-              // ── Login button (filled, deep green) ────────────────────────
-              _PrimaryButton(
-                label: AppStrings.loginButton,
-                icon: Icons.login_rounded,
-                onTap: onLoginTap,
-              ),
-              const SizedBox(height: 14),
-
-              // ── Create Farm Profile button (outlined) ────────────────────
-              _SecondaryButton(
-                label: AppStrings.createFarmButton,
-                icon: Icons.person_add_alt_1_rounded,
-                onTap: onSignupTap,
-              ),
-              const SizedBox(height: 8),
-            ],
-          ),
-        ),
       ),
     );
   }
 }
 
 // ---------------------------------------------------------------------------
-// _InputField — reusable styled text field
+// _InputField
+// Styled TextField with scale-aware min-height and padding
 // ---------------------------------------------------------------------------
 class _InputField extends StatelessWidget {
   final TextEditingController controller;
@@ -441,28 +408,55 @@ class _InputField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return TextField(
-      controller: controller,
-      obscureText: obscureText,
-      keyboardType: keyboardType,
-      textInputAction: textInputAction,
-      onSubmitted: onSubmitted,
-      style: const TextStyle(
-        color: AppColors.textDark,
-        fontSize: 15,
-        fontWeight: FontWeight.w500,
-      ),
-      decoration: InputDecoration(
-        hintText: hint,
-        prefixIcon: Icon(prefixIcon, color: Colors.grey[600]),
-        suffixIcon: suffixIcon,
+    final textScaler = MediaQuery.textScalerOf(context);
+    final minFieldHeight = textScaler.scale(50.0);
+
+    return ConstrainedBox(
+      constraints: BoxConstraints(minHeight: minFieldHeight),
+      child: TextField(
+        controller: controller,
+        obscureText: obscureText,
+        keyboardType: keyboardType,
+        textInputAction: textInputAction,
+        onSubmitted: onSubmitted,
+        style: const TextStyle(
+          color: Color(0xFF0F172A),
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+        ),
+        decoration: InputDecoration(
+          isDense: true,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          hintText: hint,
+          hintStyle: const TextStyle(
+            color: Color(0xFF94A3B8),
+            fontSize: 14,
+            fontWeight: FontWeight.w400,
+          ),
+          filled: true,
+          fillColor: const Color(0xFFF8FAFC),
+          prefixIcon: Icon(prefixIcon, color: const Color(0xFF94A3B8), size: 20),
+          suffixIcon: suffixIcon,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: const BorderSide(color: Color(0xFF1B4332), width: 1.5),
+          ),
+        ),
       ),
     );
   }
 }
 
 // ---------------------------------------------------------------------------
-// _PrimaryButton — filled deep-green pill button
+// _PrimaryButton — filled forest-green button
 // ---------------------------------------------------------------------------
 class _PrimaryButton extends StatelessWidget {
   final String label;
@@ -477,23 +471,29 @@ class _PrimaryButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      height: 56,
-      child: ElevatedButton.icon(
-        onPressed: onTap,
-        icon: Icon(icon, size: 20),
-        label: Text(label),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.deepGreen,
-          foregroundColor: Colors.white,
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(28),
-          ),
-          textStyle: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
+    final textScaler = MediaQuery.textScalerOf(context);
+    final minBtnHeight = textScaler.scale(48.0);
+
+    return ConstrainedBox(
+      constraints: BoxConstraints(minHeight: minBtnHeight),
+      child: SizedBox(
+        width: double.infinity,
+        child: ElevatedButton.icon(
+          onPressed: onTap,
+          icon: Icon(icon, size: 18),
+          label: Text(label),
+          style: ElevatedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+            backgroundColor: const Color(0xFF1B4332),
+            foregroundColor: Colors.white,
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(24),
+            ),
+            textStyle: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ),
       ),
@@ -502,7 +502,7 @@ class _PrimaryButton extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// _SecondaryButton — outlined pill button
+// _SecondaryButton — outlined forest-green button
 // ---------------------------------------------------------------------------
 class _SecondaryButton extends StatelessWidget {
   final String label;
@@ -517,22 +517,28 @@ class _SecondaryButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      height: 56,
-      child: OutlinedButton.icon(
-        onPressed: onTap,
-        icon: Icon(icon, size: 20),
-        label: Text(label),
-        style: OutlinedButton.styleFrom(
-          foregroundColor: AppColors.deepGreen,
-          side: const BorderSide(color: AppColors.deepGreen, width: 1.5),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(28),
-          ),
-          textStyle: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
+    final textScaler = MediaQuery.textScalerOf(context);
+    final minBtnHeight = textScaler.scale(48.0);
+
+    return ConstrainedBox(
+      constraints: BoxConstraints(minHeight: minBtnHeight),
+      child: SizedBox(
+        width: double.infinity,
+        child: OutlinedButton.icon(
+          onPressed: onTap,
+          icon: Icon(icon, size: 18),
+          label: Text(label),
+          style: OutlinedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+            foregroundColor: const Color(0xFF1B4332),
+            side: const BorderSide(color: Color(0xFF1B4332), width: 1.5),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(24),
+            ),
+            textStyle: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ),
       ),

@@ -536,122 +536,258 @@ class AppShellState extends State<AppShell> with WidgetsBindingObserver {
     String cowName,
     String currentMethod,
   ) {
-    String selectedMethod = (currentMethod == 'VET' || currentMethod == 'SELF')
-        ? currentMethod
-        : 'VET';
+    bool isPregnantSelected = true;
+    String? selectedMethod;
+    bool isSubmitting = false;
+
+    final cowProvider = context.read<CowProvider>();
+    final cow = cowProvider.cows.where((c) => c.id == cowId).firstOrNull;
+    final currentStatus = cow?.status ?? 'UNKNOWN';
+
     showDialog(
       context: context,
+      barrierDismissible: false,
       builder: (ctx) => StatefulBuilder(
-        builder: (context, setStateDialog) => AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          title: Text('Confirmation Method — Cow #$cowName'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Current Method: $currentMethod',
-                style: const TextStyle(
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textGrey,
-                ),
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'Select confirmation method:',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      style: OutlinedButton.styleFrom(
-                        backgroundColor: selectedMethod == 'SELF'
-                            ? AppColors.sageTint
-                            : Colors.transparent,
-                        side: BorderSide(
-                          color: selectedMethod == 'SELF'
-                              ? AppColors.deepGreen
-                              : Colors.grey,
-                        ),
-                      ),
-                      onPressed: () =>
-                          setStateDialog(() => selectedMethod = 'SELF'),
-                      child: const Text(
-                        'Self Confirmed',
-                        style: TextStyle(
-                          color: AppColors.deepGreen,
-                          fontWeight: FontWeight.bold,
-                        ),
+        builder: (context, setStateDialog) {
+          final isRed = !isPregnantSelected;
+          final themeColor = isRed ? const Color(0xFFC8372D) : const Color(0xFF00522A);
+
+          return Dialog(
+            backgroundColor: const Color(0xFFF7F5EC),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(28),
+            ),
+            insetPadding: const EdgeInsets.symmetric(horizontal: 20),
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                  Center(
+                    child: Container(
+                      width: 32,
+                      height: 4,
+                      margin: const EdgeInsets.only(bottom: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(2),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: OutlinedButton(
-                      style: OutlinedButton.styleFrom(
-                        backgroundColor: selectedMethod == 'VET'
-                            ? AppColors.sageTint
-                            : Colors.transparent,
-                        side: BorderSide(
-                          color: selectedMethod == 'VET'
-                              ? AppColors.deepGreen
-                              : Colors.grey,
-                        ),
+                  Text(
+                    'Confirmation Action — Cow #$cowName',
+                    style: const TextStyle(
+                      fontSize: 20,
+                      height: 1.3,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1A1A1A),
+                      letterSpacing: -0.01,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  RichText(
+                    text: TextSpan(
+                      text: 'Current Status: ',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: Color(0xFF8A8A8A),
                       ),
-                      onPressed: () =>
-                          setStateDialog(() => selectedMethod = 'VET'),
-                      child: const Text(
-                        'Vet Confirmed',
-                        style: TextStyle(
-                          color: AppColors.deepGreen,
-                          fontWeight: FontWeight.bold,
+                      children: [
+                        TextSpan(
+                          text: currentStatus,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF404941),
+                          ),
                         ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Select outcome:',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xFF8A8A8A),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    height: 46,
+                    padding: const EdgeInsets.all(3),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEDEBE0),
+                      borderRadius: BorderRadius.circular(23),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () {
+                              if (!isPregnantSelected) {
+                                setStateDialog(() {
+                                  isPregnantSelected = true;
+                                  selectedMethod = null;
+                                });
+                              }
+                            },
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: isPregnantSelected ? const Color(0xFF00522A) : Colors.transparent,
+                                borderRadius: BorderRadius.circular(23),
+                              ),
+                              alignment: Alignment.center,
+                              child: Text(
+                                'Pregnant',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: isPregnantSelected ? FontWeight.bold : FontWeight.normal,
+                                  color: isPregnantSelected ? Colors.white : const Color(0xFF6B6B6B),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () {
+                              if (isPregnantSelected) {
+                                setStateDialog(() {
+                                  isPregnantSelected = false;
+                                  selectedMethod = null;
+                                });
+                              }
+                            },
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: !isPregnantSelected ? const Color(0xFFC8372D) : Colors.transparent,
+                                borderRadius: BorderRadius.circular(23),
+                              ),
+                              alignment: Alignment.center,
+                              child: Text(
+                                'Not Pregnant',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: !isPregnantSelected ? FontWeight.bold : FontWeight.normal,
+                                  color: !isPregnantSelected ? Colors.white : const Color(0xFF6B6B6B),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: themeColor.withValues(alpha: 0.05),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: themeColor.withValues(alpha: 0.15),
+                        width: 1.5,
                       ),
                     ),
+                    child: Column(
+                      children: [
+                        _MethodButton(
+                          title: 'Self Confirmed',
+                          icon: Icons.check_circle,
+                          isSelected: selectedMethod == 'SELF',
+                          themeColor: themeColor,
+                          onTap: () => setStateDialog(() => selectedMethod = 'SELF'),
+                        ),
+                        const SizedBox(height: 12),
+                        _MethodButton(
+                          title: 'Vet Confirmed',
+                          icon: Icons.monitor_heart_outlined,
+                          isSelected: selectedMethod == 'VET',
+                          themeColor: themeColor,
+                          onTap: () => setStateDialog(() => selectedMethod = 'VET'),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: isSubmitting ? null : () => Navigator.of(ctx).pop(),
+                        style: TextButton.styleFrom(
+                          foregroundColor: const Color(0xFF00522A),
+                          textStyle: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        child: const Text('Cancel'),
+                      ),
+                      const SizedBox(width: 12),
+                      ElevatedButton(
+                        onPressed: (selectedMethod == null || isSubmitting) ? null : () async {
+                          setStateDialog(() => isSubmitting = true);
+                          
+                          if (isPregnantSelected) {
+                            final success = await cowProvider.confirmPregnancy(
+                              cowId,
+                              widget.userId,
+                              method: selectedMethod!,
+                            );
+                            if (ctx.mounted) {
+                              Navigator.of(ctx).pop();
+                              if (success) {
+                                AppToast.showSuccess(ctx, '✅ Pregnancy confirmed ($selectedMethod) for Cow #$cowName.');
+                              } else {
+                                AppToast.showError(ctx, cowProvider.errorMessage ?? 'Failed to confirm pregnancy.');
+                              }
+                            }
+                          } else {
+                            // "Not Pregnant" branch - simulated for now until backend is built
+                            await Future.delayed(const Duration(milliseconds: 600));
+                            if (ctx.mounted) {
+                              Navigator.of(ctx).pop();
+                              AppToast.showSuccess(ctx, 'Cow #$cowName marked as Not Pregnant (UI Simulated).');
+                            }
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: themeColor,
+                          foregroundColor: Colors.white,
+                          disabledBackgroundColor: themeColor.withValues(alpha: 0.5),
+                          disabledForegroundColor: Colors.white.withValues(alpha: 0.8),
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 0),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 1,
+                        ),
+                        child: isSubmitting 
+                           ? const SizedBox(
+                               width: 16, 
+                               height: 16, 
+                               child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)
+                             )
+                           : const Text(
+                            'Sure',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                      ),
+                    ],
                   ),
                 ],
               ),
-            ],
+            ),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.deepGreen,
-                foregroundColor: Colors.white,
-              ),
-              onPressed: () async {
-                Navigator.of(ctx).pop();
-                final cowProvider = context.read<CowProvider>();
-                final success = await cowProvider.confirmPregnancy(
-                  cowId,
-                  widget.userId,
-                  method: selectedMethod,
-                );
-                if (!mounted) return;
-                if (success) {
-                  AppToast.showSuccess(
-                    context,
-                    '✅ Pregnancy confirmed ($selectedMethod) for Cow #$cowName.',
-                  );
-                } else {
-                  AppToast.showError(
-                    context,
-                    cowProvider.errorMessage ?? 'Failed to confirm pregnancy.',
-                  );
-                }
-              },
-              child: const Text('Save Method'),
-            ),
-          ],
-        ),
+        );
+      },
       ),
     );
   }
@@ -2054,6 +2190,63 @@ class _AddPillChip extends StatelessWidget {
             fontSize: 14,
             fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MethodButton extends StatelessWidget {
+  final String title;
+  final IconData icon;
+  final bool isSelected;
+  final Color themeColor;
+  final VoidCallback onTap;
+
+  const _MethodButton({
+    required this.title,
+    required this.icon,
+    required this.isSelected,
+    required this.themeColor,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final bgColor = isSelected ? themeColor : Colors.white;
+    final textColor = isSelected ? Colors.white : themeColor;
+    
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        height: 48,
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: themeColor,
+            width: 1.5,
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              color: textColor,
+              size: 18,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              title,
+              style: TextStyle(
+                color: textColor,
+                fontSize: 15,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
         ),
       ),
     );
