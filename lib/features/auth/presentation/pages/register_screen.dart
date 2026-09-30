@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 
-import '../../../../core/theme/app_theme.dart';
 import '../../../../core/constants/app_strings.dart';
 
 // ---------------------------------------------------------------------------
 // RegisterScreen
+// ---------------------------------------------------------------------------
+// Pure UI — no business logic here. All user actions are surfaced via
+// the [onSignupTap] and [onBackTap] callbacks.
 // ---------------------------------------------------------------------------
 
 class RegisterScreen extends StatefulWidget {
@@ -15,7 +18,7 @@ class RegisterScreen extends StatefulWidget {
     String farmName,
     String farmerName,
   ) onSignupTap;
-  
+
   final VoidCallback onBackTap;
 
   const RegisterScreen({
@@ -95,36 +98,43 @@ class _RegisterScreenState extends State<RegisterScreen>
       body: Stack(
         fit: StackFit.expand,
         children: [
-          _FarmBackground(),
+          // ── (1) Background gradient ─────────────────────────────────────
+          const _FarmBackground(),
+
+          // ── (2) Scrollable Centered Card Container ───────────────────────
           SafeArea(
-            child: Column(
-              children: [
-                const SizedBox(height: 32),
-                _AppLogoHeader(),
-              ],
-            ),
-          ),
-          Positioned.fill(
-            child: Align(
-              alignment: Alignment.center,
-              child: SlideTransition(
-                position: _slideAnim,
-                child: FadeTransition(
-                  opacity: _fadeAnim,
-                  child: _RegisterCard(
-                    usernameController: _usernameController,
-                    passwordController: _passwordController,
-                    farmNameController: _farmNameController,
-                    farmerNameController: _farmerNameController,
-                    obscurePassword: _obscurePassword,
-                    onToggleObscure: () {
-                      setState(() => _obscurePassword = !_obscurePassword);
-                    },
-                    onSignupTap: _handleSignup,
-                    onBackTap: widget.onBackTap,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 32),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      minHeight: constraints.maxHeight - 64,
+                    ),
+                    child: Center(
+                      child: SlideTransition(
+                        position: _slideAnim,
+                        child: FadeTransition(
+                          opacity: _fadeAnim,
+                          child: _RegisterCard(
+                            usernameController: _usernameController,
+                            passwordController: _passwordController,
+                            farmNameController: _farmNameController,
+                            farmerNameController: _farmerNameController,
+                            obscurePassword: _obscurePassword,
+                            onToggleObscure: () {
+                              setState(() => _obscurePassword = !_obscurePassword);
+                            },
+                            onSignupTap: _handleSignup,
+                            onBackTap: widget.onBackTap,
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
-                ),
-              ),
+                );
+              },
             ),
           ),
         ],
@@ -133,7 +143,13 @@ class _RegisterScreenState extends State<RegisterScreen>
   }
 }
 
+// ---------------------------------------------------------------------------
+// _FarmBackground
+// Gradient matching the Login screen and reference design
+// ---------------------------------------------------------------------------
 class _FarmBackground extends StatelessWidget {
+  const _FarmBackground();
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -141,46 +157,31 @@ class _FarmBackground extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          stops: [0.0, 0.35, 0.60, 1.0],
+          stops: [0.0, 0.35, 0.70, 1.0],
           colors: [
-            Color(0xFFB8D8E8), // soft sky blue
-            Color(0xFFD6E8C8), // pale horizon haze
-            Color(0xFF6AAF5A), // mid meadow green
-            Color(0xFF3E8B2A), // deep grass green
+            Color(0xFFFCF8FB), // Soft off-white
+            Color(0xFFEEF5F0), // Minty haze horizon
+            Color(0xFF529871), // Meadow green
+            Color(0xFF1B4332), // Deep forest green
           ],
         ),
       ),
       child: Stack(
         children: [
+          // Bottom ambient grounding gradient band
           Positioned(
-            top: -60,
             left: 0,
             right: 0,
-            child: Center(
-              child: Container(
-                width: 220,
-                height: 220,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white.withAlpha(46), // ~0.18 * 255
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            top: 160,
-            left: 0,
-            right: 0,
-            height: 60,
+            bottom: 0,
+            height: 56,
             child: Container(
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.topCenter,
                   colors: [
-                    Colors.white.withAlpha(0),
-                    Colors.white.withAlpha(56), // ~0.22 * 255
-                    Colors.white.withAlpha(0),
+                    Color(0x331B4332),
+                    Colors.transparent,
                   ],
                 ),
               ),
@@ -192,63 +193,10 @@ class _FarmBackground extends StatelessWidget {
   }
 }
 
-class _AppLogoHeader extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 72,
-          height: 72,
-          decoration: BoxDecoration(
-            color: Colors.white.withAlpha(230), // ~0.90 * 255
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withAlpha(31), // ~0.12 * 255
-                blurRadius: 16,
-                offset: const Offset(0, 6),
-              ),
-            ],
-          ),
-          child: const Icon(
-            Icons.agriculture_rounded,
-            color: AppColors.deepGreen,
-            size: 40,
-          ),
-        ),
-        const SizedBox(height: 12),
-        Text(
-          AppStrings.appName,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 20,
-            fontWeight: FontWeight.w700,
-            letterSpacing: -0.4,
-            shadows: [
-              Shadow(
-                color: Colors.black26,
-                blurRadius: 8,
-                offset: Offset(0, 2),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          'Register Farm',
-          style: TextStyle(
-            color: Colors.white.withAlpha(217), // ~0.85 * 255
-            fontSize: 15,
-            fontWeight: FontWeight.w400,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
+// ---------------------------------------------------------------------------
+// _RegisterCard
+// Main Create Profile card with overlapping dark green logo badge
+// ---------------------------------------------------------------------------
 class _RegisterCard extends StatelessWidget {
   final TextEditingController usernameController;
   final TextEditingController passwordController;
@@ -272,120 +220,180 @@ class _RegisterCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final mq = MediaQuery.of(context);
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 448),
+      child: Stack(
+        clipBehavior: Clip.none,
+        alignment: Alignment.topCenter,
+        children: [
+          // Main White Card Body
+          Container(
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: const Color(0xF5FFFFFF),
+              borderRadius: BorderRadius.circular(28),
+              boxShadow: const [
+                BoxShadow(
+                  color: Colors.black12,
+                  blurRadius: 32,
+                  offset: Offset(0, 8),
+                ),
+              ],
+            ),
+            padding: const EdgeInsets.fromLTRB(24, 52, 24, 32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // ── Brand Name ──────────────────────────────────────────────
+                Text(
+                  'Farm Flow',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.rammettoOne(
+                    color: const Color(0xFF1B4332),
+                    fontSize: 22,
+                  ),
+                ),
+                const SizedBox(height: 4),
 
-    return Container(
-      margin: EdgeInsets.only(bottom: mq.viewInsets.bottom, left: 24, right: 24),
-      decoration: const BoxDecoration(
-        color: Color(0xF5FFFFFF),
-        borderRadius: BorderRadius.all(Radius.circular(32)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black12,
-            blurRadius: 32,
-            offset: Offset(0, 8),
+                // ── Screen Title ────────────────────────────────────────────
+                const Text(
+                  'Create Profile',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Color(0xFF0F172A),
+                    fontSize: 24,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.4,
+                    height: 1.2,
+                  ),
+                ),
+                const SizedBox(height: 4),
+
+                // ── Subtitle ────────────────────────────────────────────────
+                const Text(
+                  'Enter details to register',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Color(0xFF64748B),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                // ── Form Inputs ─────────────────────────────────────────────
+                _InputField(
+                  controller: farmNameController,
+                  hint: 'Farm Name',
+                  prefixIcon: Icons.home_outlined,
+                  keyboardType: TextInputType.text,
+                  textInputAction: TextInputAction.next,
+                ),
+                const SizedBox(height: 14),
+
+                _InputField(
+                  controller: farmerNameController,
+                  hint: 'Farmer Name',
+                  prefixIcon: Icons.person_outline_rounded,
+                  keyboardType: TextInputType.text,
+                  textInputAction: TextInputAction.next,
+                ),
+                const SizedBox(height: 14),
+
+                _InputField(
+                  controller: usernameController,
+                  hint: AppStrings.usernameHint,
+                  prefixIcon: Icons.alternate_email_rounded,
+                  keyboardType: TextInputType.text,
+                  textInputAction: TextInputAction.next,
+                ),
+                const SizedBox(height: 14),
+
+                _InputField(
+                  controller: passwordController,
+                  hint: AppStrings.passwordHint,
+                  prefixIcon: Icons.lock_outline_rounded,
+                  obscureText: obscurePassword,
+                  textInputAction: TextInputAction.done,
+                  onSubmitted: (_) => onSignupTap(),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      obscurePassword
+                          ? Icons.visibility_off_outlined
+                          : Icons.visibility_outlined,
+                      color: const Color(0xFF94A3B8),
+                      size: 20,
+                    ),
+                    onPressed: onToggleObscure,
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                // ── Primary Register Farm Button ───────────────────────────
+                _PrimaryButton(
+                  label: 'Register Farm',
+                  icon: Icons.person_add_alt_1_rounded,
+                  onTap: onSignupTap,
+                ),
+                const SizedBox(height: 12),
+
+                // ── Secondary Back to Login Button ─────────────────────────
+                _SecondaryButton(
+                  label: 'Back to Login',
+                  icon: Icons.arrow_back_rounded,
+                  onTap: onBackTap,
+                ),
+              ],
+            ),
+          ),
+
+          // Overlapping Dark Green Logo Badge at Top Center of Card
+          Positioned(
+            top: -28,
+            child: Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: const Color(0xFF1B4332),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.white, width: 2.5),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x401B4332),
+                    blurRadius: 16,
+                    offset: Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(13),
+                child: Image.asset(
+                  'assets/images/logo.png',
+                  width: 32,
+                  height: 32,
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) {
+                    return const Icon(
+                      Icons.agriculture_rounded,
+                      color: Colors.white,
+                      size: 30,
+                    );
+                  },
+                ),
+              ),
+            ),
           ),
         ],
-      ),
-      child: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(28, 36, 28, 40),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Text(
-                'Create Profile',
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: AppColors.textDark,
-                  fontSize: 24,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -0.5,
-                  height: 1.25,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Enter details to register',
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: AppColors.textGrey,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w400,
-                ),
-              ),
-              const SizedBox(height: 32),
-
-              _InputField(
-                controller: farmNameController,
-                hint: 'Farm Name',
-                prefixIcon: Icons.home_work_outlined,
-                keyboardType: TextInputType.text,
-                textInputAction: TextInputAction.next,
-              ),
-              const SizedBox(height: 14),
-
-              _InputField(
-                controller: farmerNameController,
-                hint: 'Farmer Name',
-                prefixIcon: Icons.person_outline_rounded,
-                keyboardType: TextInputType.text,
-                textInputAction: TextInputAction.next,
-              ),
-              const SizedBox(height: 14),
-
-              _InputField(
-                controller: usernameController,
-                hint: AppStrings.usernameHint,
-                prefixIcon: Icons.alternate_email_rounded,
-                keyboardType: TextInputType.text,
-                textInputAction: TextInputAction.next,
-              ),
-              const SizedBox(height: 14),
-
-              _InputField(
-                controller: passwordController,
-                hint: AppStrings.passwordHint,
-                prefixIcon: Icons.lock_outline_rounded,
-                obscureText: obscurePassword,
-                textInputAction: TextInputAction.done,
-                onSubmitted: (_) => onSignupTap(),
-                suffixIcon: IconButton(
-                  icon: Icon(
-                    obscurePassword
-                        ? Icons.visibility_off_outlined
-                        : Icons.visibility_outlined,
-                    color: AppColors.textGrey,
-                    size: 20,
-                  ),
-                  onPressed: onToggleObscure,
-                ),
-              ),
-              const SizedBox(height: 28),
-
-              _PrimaryButton(
-                label: 'Register Farm',
-                icon: Icons.person_add_alt_1_rounded,
-                onTap: onSignupTap,
-              ),
-              const SizedBox(height: 14),
-
-              _SecondaryButton(
-                label: 'Back to Login',
-                icon: Icons.arrow_back_rounded,
-                onTap: onBackTap,
-              ),
-              const SizedBox(height: 8),
-            ],
-          ),
-        ),
       ),
     );
   }
 }
 
+// ---------------------------------------------------------------------------
+// _InputField
+// Styled TextField with scale-aware min-height and padding
+// ---------------------------------------------------------------------------
 class _InputField extends StatelessWidget {
   final TextEditingController controller;
   final String hint;
@@ -409,26 +417,56 @@ class _InputField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return TextField(
-      controller: controller,
-      obscureText: obscureText,
-      keyboardType: keyboardType,
-      textInputAction: textInputAction,
-      onSubmitted: onSubmitted,
-      style: const TextStyle(
-        color: AppColors.textDark,
-        fontSize: 15,
-        fontWeight: FontWeight.w500,
-      ),
-      decoration: InputDecoration(
-        hintText: hint,
-        prefixIcon: Icon(prefixIcon, color: Colors.grey[600]),
-        suffixIcon: suffixIcon,
+    final textScaler = MediaQuery.textScalerOf(context);
+    final minFieldHeight = textScaler.scale(50.0);
+
+    return ConstrainedBox(
+      constraints: BoxConstraints(minHeight: minFieldHeight),
+      child: TextField(
+        controller: controller,
+        obscureText: obscureText,
+        keyboardType: keyboardType,
+        textInputAction: textInputAction,
+        onSubmitted: onSubmitted,
+        style: const TextStyle(
+          color: Color(0xFF0F172A),
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+        ),
+        decoration: InputDecoration(
+          isDense: true,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          hintText: hint,
+          hintStyle: const TextStyle(
+            color: Color(0xFF94A3B8),
+            fontSize: 14,
+            fontWeight: FontWeight.w400,
+          ),
+          filled: true,
+          fillColor: const Color(0xFFF8FAFC),
+          prefixIcon: Icon(prefixIcon, color: const Color(0xFF94A3B8), size: 20),
+          suffixIcon: suffixIcon,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: const BorderSide(color: Color(0xFF1B4332), width: 1.5),
+          ),
+        ),
       ),
     );
   }
 }
 
+// ---------------------------------------------------------------------------
+// _PrimaryButton — filled forest-green button
+// ---------------------------------------------------------------------------
 class _PrimaryButton extends StatelessWidget {
   final String label;
   final IconData icon;
@@ -442,23 +480,29 @@ class _PrimaryButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      height: 56,
-      child: ElevatedButton.icon(
-        onPressed: onTap,
-        icon: Icon(icon, size: 20),
-        label: Text(label),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.deepGreen,
-          foregroundColor: Colors.white,
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(28),
-          ),
-          textStyle: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
+    final textScaler = MediaQuery.textScalerOf(context);
+    final minBtnHeight = textScaler.scale(48.0);
+
+    return ConstrainedBox(
+      constraints: BoxConstraints(minHeight: minBtnHeight),
+      child: SizedBox(
+        width: double.infinity,
+        child: ElevatedButton.icon(
+          onPressed: onTap,
+          icon: Icon(icon, size: 18),
+          label: Text(label),
+          style: ElevatedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+            backgroundColor: const Color(0xFF1B4332),
+            foregroundColor: Colors.white,
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(24),
+            ),
+            textStyle: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ),
       ),
@@ -466,6 +510,9 @@ class _PrimaryButton extends StatelessWidget {
   }
 }
 
+// ---------------------------------------------------------------------------
+// _SecondaryButton — outlined forest-green button
+// ---------------------------------------------------------------------------
 class _SecondaryButton extends StatelessWidget {
   final String label;
   final IconData icon;
@@ -479,22 +526,28 @@ class _SecondaryButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      height: 56,
-      child: OutlinedButton.icon(
-        onPressed: onTap,
-        icon: Icon(icon, size: 20),
-        label: Text(label),
-        style: OutlinedButton.styleFrom(
-          foregroundColor: AppColors.deepGreen,
-          side: const BorderSide(color: AppColors.deepGreen, width: 1.5),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(28),
-          ),
-          textStyle: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
+    final textScaler = MediaQuery.textScalerOf(context);
+    final minBtnHeight = textScaler.scale(48.0);
+
+    return ConstrainedBox(
+      constraints: BoxConstraints(minHeight: minBtnHeight),
+      child: SizedBox(
+        width: double.infinity,
+        child: OutlinedButton.icon(
+          onPressed: onTap,
+          icon: Icon(icon, size: 18),
+          label: Text(label),
+          style: OutlinedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+            foregroundColor: const Color(0xFF1B4332),
+            side: const BorderSide(color: Color(0xFF1B4332), width: 1.5),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(24),
+            ),
+            textStyle: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ),
       ),

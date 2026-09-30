@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/constants/app_strings.dart';
 
@@ -241,21 +242,24 @@ class _AuthCard extends StatelessWidget {
                 // ── Title: Welcome to Farm Flow ────────────────────────────
                 RichText(
                   textAlign: TextAlign.center,
-                  text: const TextSpan(
-                    style: TextStyle(
+                  text: TextSpan(
+                    style: const TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.w800,
                       letterSpacing: -0.4,
                       height: 1.25,
                     ),
                     children: [
-                      TextSpan(
+                      const TextSpan(
                         text: 'Welcome to ',
                         style: TextStyle(color: Color(0xFF0F172A)),
                       ),
                       TextSpan(
                         text: 'Farm Flow',
-                        style: TextStyle(color: Color(0xFF1B4332)),
+                        style: GoogleFonts.rammettoOne(
+                          color: const Color(0xFF1B4332),
+                          fontSize: 20,
+                        ),
                       ),
                     ],
                   ),
