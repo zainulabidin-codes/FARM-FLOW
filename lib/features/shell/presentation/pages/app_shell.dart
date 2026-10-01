@@ -14,6 +14,7 @@ import 'package:dairy_farm_app/features/cows/presentation/pages/cows_screen.dart
 import 'package:dairy_farm_app/features/cows/presentation/widgets/cow_age_picker.dart';
 import 'package:dairy_farm_app/features/cows/presentation/models/cow_ui_model.dart'
     as ui_models;
+import 'package:dairy_farm_app/features/dashboard/domain/connectors/milk_card_actions_connector.dart';
 import 'package:dairy_farm_app/features/dashboard/presentation/pages/dashboard_screen.dart';
 import 'package:dairy_farm_app/features/dashboard/presentation/pages/activity_log_screen.dart';
 import 'package:dairy_farm_app/features/dodi_ledger/presentation/pages/dodi_ledger_screen.dart';
@@ -951,6 +952,18 @@ class AppShellState extends State<AppShell> with WidgetsBindingObserver {
           context,
         ).push(MaterialPageRoute(builder: (_) => const ActivityLogScreen())),
         onNavTap: _onNavTap,
+        onMilkCardAction: (action) async {
+          final connector = context.read<MilkCardActionsConnector>();
+          final result = await connector.executeAction(action);
+          if (!context.mounted) return;
+          if (result is MilkActionNotConnected) {
+            AppToast.showInfo(context, 'Action connector not connected yet');
+          } else if (result is MilkActionFailure) {
+            AppToast.showError(context, result.errorMessage);
+          } else if (result is MilkActionSuccess && result.message != null) {
+            AppToast.showSuccess(context, result.message!);
+          }
+        },
         onRefresh: () =>
             DashboardRefreshCoordinator(context).refreshAll(widget.userId),
       ),

@@ -12,6 +12,7 @@ import 'features/auth/presentation/pages/register_screen.dart';
 import 'features/auth/presentation/providers/auth_provider.dart';
 import 'features/cows/data/repositories/cow_repository.dart';
 import 'features/cows/presentation/providers/cow_provider.dart';
+import 'features/dashboard/domain/connectors/milk_card_actions_connector.dart';
 import 'features/dashboard/presentation/providers/activity_log_provider.dart';
 import 'features/cows/presentation/pages/cow_milk_screen.dart';
 import 'features/dodi_ledger/data/repositories/dodi_repository.dart';
@@ -82,6 +83,11 @@ class DairyFarmApp extends StatelessWidget {
           ChangeNotifierProxyProvider<ActivityLogProvider, MilkEntryProvider>(
             create: (_) => MilkEntryProvider(repository: MilkEntryRepository()),
             update: (_, activityProvider, previous) => previous!..setActivityProvider(activityProvider),
+          ),
+
+          // Phase 2 Connector A: Milk Card Actions Connector
+          Provider<MilkCardActionsConnector>(
+            create: (_) => const DefaultMilkCardActionsConnector(),
           ),
         ],
       child: MaterialApp(

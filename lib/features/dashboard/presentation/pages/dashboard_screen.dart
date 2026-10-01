@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
-import '../../../../core/theme/app_theme.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/utils/activity_display_formatter.dart';
+import '../../domain/connectors/milk_card_actions_connector.dart';
 
 // ---------------------------------------------------------------------------
 // Data model — dashboard only (no DB logic, pure UI data carrier)
@@ -51,6 +52,7 @@ class RecentActivity {
 // ---------------------------------------------------------------------------
 // Pure UI — every piece of data arrives via parameters; every user action
 // is forwarded through callbacks. The widget contains no side effects.
+// Matches Figma Frame "Html → Body" (390x918)
 // ---------------------------------------------------------------------------
 
 class DashboardScreen extends StatefulWidget {
@@ -115,6 +117,12 @@ class DashboardScreen extends StatefulWidget {
   /// The actual name of the farm.
   final String? actualFarmName;
 
+  /// Fired when the user selects a 3-dots menu action on Today's Milk card (Node 14:2).
+  final ValueChanged<MilkCardActionType>? onMilkCardAction;
+
+  /// Fired when the user taps the Scheduled Vet Check banner.
+  final VoidCallback? onVetCheckBannerTap;
+
   const DashboardScreen({
     super.key,
     required this.farmName,
@@ -136,6 +144,8 @@ class DashboardScreen extends StatefulWidget {
     this.currentNavIndex = 0,
     this.actualFarmName,
     this.onRefresh,
+    this.onMilkCardAction,
+    this.onVetCheckBannerTap,
   });
 
   @override
@@ -181,19 +191,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.bgGrey,
+      backgroundColor: const Color(0xFFFBF9F6), // Figma background #FBF9F6
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: _handleRefresh,
-          color: AppColors.deepGreen,
+          color: const Color(0xFF1B4332),
           child: CustomScrollView(
             physics: const AlwaysScrollableScrollPhysics(
                 parent: BouncingScrollPhysics()),
             slivers: [
-              // ── Sticky top greeting bar ──────────────────────────────────
+              // ── Header - TopAppBar Shared Component Execution ───────────
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
                   child: _GreetingBar(
                     greeting: _greeting,
                     farmName: widget.farmName,
@@ -202,25 +212,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
               ),
 
-              const SliverToBoxAdapter(child: SizedBox(height: 20)),
+              const SliverToBoxAdapter(child: SizedBox(height: 16)),
 
-              // ── Stat cards row ───────────────────────────────────────────
+              // ── Farm Summary Split Hero Section ──────────────────────────
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Today's Milk card
+                      // Metric Card 1: Today's Milk
                       Expanded(
                         child: _MilkCard(
                           totalMilk: widget.totalMilk,
                           morningMilk: widget.morningMilk,
                           eveningMilk: widget.eveningMilk,
                           onTap: widget.onMilkEntryTap,
+                          onMilkCardAction: widget.onMilkCardAction,
                         ),
                       ),
-                      const SizedBox(width: 14),
-                      // Active Cows card
+                      const SizedBox(width: 10),
+                      // Metric Card 2: Total Herd
                       Expanded(
                         child: _CowsCard(
                           totalCows: widget.totalCows,
@@ -237,9 +249,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
               ),
 
-              const SliverToBoxAdapter(child: SizedBox(height: 28)),
+              const SliverToBoxAdapter(child: SizedBox(height: 24)),
 
-              // ── Recent Activity header ───────────────────────────────────
+              // ── Section - Quick Shortcuts Banner ─────────────────────────
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: _ScheduledVetBanner(
+                    onTap: widget.onVetCheckBannerTap,
+                  ),
+                ),
+              ),
+
+              const SliverToBoxAdapter(child: SizedBox(height: 24)),
+
+              // ── Section: Recent Activity Header ──────────────────────────
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -247,17 +271,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        AppStrings.recentActivity,
-                        style: Theme.of(context).textTheme.headlineSmall,
+                        'Recent Activity',
+                        style: GoogleFonts.plusJakartaSans(
+                          color: const Color(0xFF1B1C1A),
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -0.2,
+                        ),
                       ),
                       GestureDetector(
                         onTap: widget.onViewAllTap,
                         child: Text(
-                          AppStrings.viewAll,
-                          style: const TextStyle(
-                            color: AppColors.deepGreen,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
+                          'View All',
+                          style: GoogleFonts.plusJakartaSans(
+                            color: const Color(0xFF2C694E),
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.1,
                           ),
                         ),
                       ),
@@ -268,10 +298,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
               const SliverToBoxAdapter(child: SizedBox(height: 12)),
 
-              // ── Activity list ────────────────────────────────────────────
+              // ── Activity Feed List Container ─────────────────────────────
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: _ActivityCard(
                     activities: widget.recentActivities,
                     onAddCowTap: widget.onAddCowTap,
@@ -279,8 +309,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
               ),
 
-              // Bottom padding so nothing hides behind the nav bar.
-              const SliverToBoxAdapter(child: SizedBox(height: 24)),
+              // Bottom padding so nothing is obscured by bottom nav
+              const SliverToBoxAdapter(child: SizedBox(height: 32)),
             ],
           ),
         ),
@@ -299,15 +329,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
 // ---------------------------------------------------------------------------
 // _GreetingBar
+// Matches Figma Frame TopAppBar: "BAJWA DAIRIES" sub-header + "Good Morning,\nZain-ul-abidin"
 // ---------------------------------------------------------------------------
 class _GreetingBar extends StatelessWidget {
   final String greeting;
   final String farmName;
   final String? actualFarmName;
-  const _GreetingBar({required this.greeting, required this.farmName, this.actualFarmName});
+
+  const _GreetingBar({
+    required this.greeting,
+    required this.farmName,
+    this.actualFarmName,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final displaySubHeader = (actualFarmName != null && actualFarmName!.trim().isNotEmpty)
+        ? actualFarmName!.toUpperCase()
+        : 'BAJWA DAIRIES';
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -316,50 +356,57 @@ class _GreetingBar extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
+              // Uppercase Sub-Header in Rammetto One font (#2C694E)
               Text(
-                greeting,
-                style: const TextStyle(
-                  color: AppColors.textDark,
-                  fontSize: 26,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -0.6,
-                  height: 1.1,
+                displaySubHeader,
+                style: GoogleFonts.rammettoOne(
+                  fontSize: 11,
+                  color: const Color(0xFF2C694E),
+                  letterSpacing: 0.5,
                 ),
               ),
-              Text(
-                farmName,
-                style: const TextStyle(
-                  color: AppColors.deepGreen,
-                  fontSize: 26,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -0.6,
-                  height: 1.1,
-                ),
-              ),
-              if (actualFarmName != null && actualFarmName!.trim().isNotEmpty) ...[
-                const SizedBox(height: 4),
-                Text(
-                  actualFarmName!.toUpperCase(),
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 1.2,
-                    color: Theme.of(context).primaryColor.withValues(alpha: 0.8),
+              const SizedBox(height: 4),
+              // Greeting + Farmer Name in Plus Jakarta Sans
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: RichText(
+                  text: TextSpan(
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 26,
+                      fontWeight: FontWeight.w800,
+                      height: 1.15,
+                      letterSpacing: -0.5,
+                    ),
+                    children: [
+                      TextSpan(
+                        text: '$greeting\n',
+                        style: const TextStyle(color: Color(0xFF1B1C1A)),
+                      ),
+                      TextSpan(
+                        text: farmName,
+                        style: const TextStyle(color: Color(0xFF1B4332)),
+                      ),
+                    ],
                   ),
                 ),
-              ]
+              ),
             ],
           ),
         ),
-        // Offline Date Card
-        const _DateCard(),
+        const SizedBox(width: 8),
+        // Date Quick-Badge (Level 2 Elevation)
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 110),
+          child: const _DateCard(),
+        ),
       ],
     );
   }
 }
 
 // ---------------------------------------------------------------------------
-// _DateCard
+// _DateCard — Date Quick-Badge (Figma node 7:29)
 // ---------------------------------------------------------------------------
 class _DateCard extends StatelessWidget {
   const _DateCard();
@@ -375,136 +422,279 @@ class _DateCard extends StatelessWidget {
     final yearStr = '${now.year}';
 
     return Container(
-      constraints: const BoxConstraints(minWidth: 52, minHeight: 52),
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: AppColors.cardWhite,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
+        color: const Color(0xFFFFFFFF),
+        borderRadius: BorderRadius.circular(36),
+        border: Border.all(color: const Color(0x66C1C8C2), width: 1),
+        boxShadow: const [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: Color(0x141B4332),
+            blurRadius: 20,
+            offset: Offset(0, 8),
           ),
         ],
       ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            dateStr,
-            style: const TextStyle(
-              color: AppColors.deepGreen,
-              fontSize: 14,
-              fontWeight: FontWeight.w800,
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              dateStr,
+              style: GoogleFonts.plusJakartaSans(
+                color: const Color(0xFF1B4332),
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.2,
+              ),
             ),
-          ),
-          Text(
-            yearStr,
-            style: const TextStyle(
-              color: AppColors.textGrey,
-              fontSize: 10,
-              fontWeight: FontWeight.w600,
+            const SizedBox(height: 2),
+            Text(
+              yearStr,
+              style: GoogleFonts.plusJakartaSans(
+                color: const Color(0xFF717973),
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 }
 
 // ---------------------------------------------------------------------------
-// _MilkCard  —  "Today's Milk" stat card
+// _MilkCard — Metric Card 1: Today's Milk (Figma node 7:38 with Node 14:2 Menu)
 // ---------------------------------------------------------------------------
 class _MilkCard extends StatelessWidget {
   final String totalMilk;
   final String morningMilk;
   final String eveningMilk;
   final VoidCallback onTap;
+  final ValueChanged<MilkCardActionType>? onMilkCardAction;
 
   const _MilkCard({
     required this.totalMilk,
     required this.morningMilk,
     required this.eveningMilk,
     required this.onTap,
+    this.onMilkCardAction,
   });
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        constraints: const BoxConstraints(minHeight: 140),
-        padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(
-          color: AppColors.cardWhite,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.06),
-              blurRadius: 14,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              AppStrings.todaysMilk,
-              style: const TextStyle(
-                color: AppColors.textGrey,
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            const SizedBox(height: 6),
-            // FittedBox ensures the number+unit never clips on small screens.
-            FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.centerLeft,
-              child: Text(
-                '$totalMilk Kg',
-                style: const TextStyle(
-                  color: AppColors.deepGreen,
-                  fontSize: 48,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -2,
-                  height: 1.0,
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFFFFF),
+        borderRadius: BorderRadius.circular(36),
+        border: Border.all(color: const Color(0x4DC1C8C2), width: 1),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x081B4332),
+            blurRadius: 12,
+            offset: Offset(0, 4),
+          ),
+          BoxShadow(
+            color: Color(0x0F1B4332),
+            blurRadius: 32,
+            offset: Offset(0, 12),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Header Row: Icon + Title + Node 14:2 3-dots Menu Popup
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.water_drop_outlined,
+                      color: Color(0xFF2C694E),
+                      size: 14,
+                    ),
+                    const SizedBox(width: 4),
+                    Flexible(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          "Today's Milk",
+                          style: GoogleFonts.plusJakartaSans(
+                            color: const Color(0xFF414844),
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ),
-            const SizedBox(height: 10),
-            // M / E breakdown pill with FittedBox scale-down protection
-            FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.centerLeft,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(
-                  color: AppColors.bgGrey,
-                  borderRadius: BorderRadius.circular(10),
+
+              // Node 14:2 "More options" 3-dots Popup Menu
+              PopupMenuButton<MilkCardActionType>(
+                icon: const Icon(
+                  Icons.more_vert_rounded,
+                  size: 20,
+                  color: Color(0xFF717973),
                 ),
-                child: Text(
-                  '${AppStrings.morningAbbr}: $morningMilk ${AppStrings.weightUnit}  |  '
-                  '${AppStrings.eveningAbbr}: $eveningMilk ${AppStrings.weightUnit}',
-                  style: const TextStyle(
-                    color: AppColors.textGrey,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 180),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                color: Colors.white,
+                elevation: 6,
+                onSelected: (action) {
+                  if (onMilkCardAction != null) {
+                    onMilkCardAction!(action);
+                  }
+                },
+                itemBuilder: (context) => [
+                  PopupMenuItem(
+                    value: MilkCardActionType.viewHistory,
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.history_rounded,
+                          size: 18,
+                          color: Color(0xFF1B4332),
+                        ),
+                        const SizedBox(width: 10),
+                        Text(
+                          'View Milk History',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xFF1B1C1A),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
+                  PopupMenuItem(
+                    value: MilkCardActionType.exportSummary,
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.ios_share_rounded,
+                          size: 18,
+                          color: Color(0xFF1B4332),
+                        ),
+                        const SizedBox(width: 10),
+                        Text(
+                          'Export Daily Summary',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xFF1B1C1A),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // Big Stat: 0.0 Kg
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: RichText(
+              text: TextSpan(
+                style: GoogleFonts.plusJakartaSans(
+                  color: const Color(0xFF1B4332),
+                  fontSize: 34,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -0.5,
+                ),
+                children: [
+                  TextSpan(text: '$totalMilk '),
+                  TextSpan(
+                    text: 'Kg',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
+
+          // Morning/Evening Breakdown Pill
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF5F3F0),
+                borderRadius: BorderRadius.circular(9999),
+                border: Border.all(color: const Color(0x40C1C8C2), width: 1),
+              ),
+              child: Text(
+                'M: $morningMilk Kg  |  E: $eveningMilk Kg',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.plusJakartaSans(
+                  color: const Color(0xFF414844),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.2,
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 8),
+
+          // Log Milk Action Button
+          InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(9999),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(
+                    Icons.add_circle_outline_rounded,
+                    size: 14,
+                    color: Color(0xFF2C694E),
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Log Milk',
+                    style: GoogleFonts.plusJakartaSans(
+                      color: const Color(0xFF2C694E),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
 // ---------------------------------------------------------------------------
-// _CowsCard  —  "Active Cows" stat card
+// _CowsCard — Metric Card 2: Total Herd (Figma node 7:59)
 // ---------------------------------------------------------------------------
 class _CowsCard extends StatelessWidget {
   final String totalCows;
@@ -528,56 +718,109 @@ class _CowsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      constraints: const BoxConstraints(minHeight: 140),
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.cardWhite,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
+        color: const Color(0xFFFFFFFF),
+        borderRadius: BorderRadius.circular(36),
+        border: Border.all(color: const Color(0x4DC1C8C2), width: 1),
+        boxShadow: const [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 14,
-            offset: const Offset(0, 4),
+            color: Color(0x081B4332),
+            blurRadius: 12,
+            offset: Offset(0, 4),
+          ),
+          BoxShadow(
+            color: Color(0x0F1B4332),
+            blurRadius: 32,
+            offset: Offset(0, 12),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            '${AppStrings.totalHerd}: $totalCows',
-            style: const TextStyle(
-              color: AppColors.textGrey,
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 6),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.centerLeft,
-            child: Text(
-              totalCows,
-              style: const TextStyle(
-                color: AppColors.deepGreen,
-                fontSize: 48,
-                fontWeight: FontWeight.w800,
-                letterSpacing: -2,
-                height: 1.0,
-              ),
-            ),
-          ),
-          const SizedBox(height: 10),
-          // Badges Wrap (All 5 Tags)
-          Wrap(
-            spacing: 6,
-            runSpacing: 6,
+          // Header Row
+          Row(
             children: [
-              _StatusBadge(count: activeCount, label: 'Milking'),
-              _StatusBadge(count: pregnantCount, label: 'Pregnant'),
-              _StatusBadge(count: dryCount, label: 'Dry'),
-              _StatusBadge(count: bredHeiferCount, label: 'Bred Heifer'),
-              _StatusBadge(count: heiferCount, label: 'Heifer'),
+              const Icon(
+                Icons.pets_outlined,
+                color: Color(0xFF2C694E),
+                size: 14,
+              ),
+              const SizedBox(width: 4),
+              Expanded(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Total Herd: $totalCows',
+                    style: GoogleFonts.plusJakartaSans(
+                      color: const Color(0xFF414844),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // Big Stat Number
+          Text(
+            totalCows,
+            style: GoogleFonts.plusJakartaSans(
+              color: const Color(0xFF1B4332),
+              fontSize: 34,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -0.5,
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // Status Breakdown Pills (5 Vertical Rows matching Figma node 7:69)
+          Column(
+            children: [
+              _StatusPillRow(
+                count: activeCount,
+                label: 'Milking',
+                bgColor: const Color(0x66AEEECB),
+                dotColor: const Color(0xFF1B4332),
+                textColor: const Color(0xFF1B4332),
+              ),
+              const SizedBox(height: 4),
+              _StatusPillRow(
+                count: pregnantCount,
+                label: 'Pregnant',
+                bgColor: const Color(0xFFF5F3F0),
+                dotColor: const Color(0xFF2C694E),
+                textColor: const Color(0xFF414844),
+              ),
+              const SizedBox(height: 4),
+              _StatusPillRow(
+                count: dryCount,
+                label: 'Dry',
+                bgColor: const Color(0xFFF5F3F0),
+                dotColor: const Color(0xFF717973),
+                textColor: const Color(0xFF414844),
+              ),
+              const SizedBox(height: 4),
+              _StatusPillRow(
+                count: bredHeiferCount,
+                label: 'Bred Heifer',
+                bgColor: const Color(0xFFF5F3F0),
+                dotColor: const Color(0xFF2C694E),
+                textColor: const Color(0xFF414844),
+              ),
+              const SizedBox(height: 4),
+              _StatusPillRow(
+                count: heiferCount,
+                label: 'Heifer',
+                bgColor: const Color(0xCCF5F3F0),
+                dotColor: const Color(0xFFC1C8C2),
+                textColor: const Color(0xFF717973),
+              ),
             ],
           ),
         ],
@@ -586,38 +829,54 @@ class _CowsCard extends StatelessWidget {
   }
 }
 
-class _StatusBadge extends StatelessWidget {
+class _StatusPillRow extends StatelessWidget {
   final String count;
   final String label;
+  final Color bgColor;
+  final Color dotColor;
+  final Color textColor;
 
-  const _StatusBadge({required this.count, required this.label});
+  const _StatusPillRow({
+    required this.count,
+    required this.label,
+    required this.bgColor,
+    required this.dotColor,
+    required this.textColor,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
+      width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: AppColors.sageTint,
-        borderRadius: BorderRadius.circular(20),
+        color: bgColor,
+        borderRadius: BorderRadius.circular(9999),
       ),
       child: Row(
-        mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 7,
-            height: 7,
-            decoration: const BoxDecoration(
-              color: AppColors.deepGreen,
+            width: 6,
+            height: 6,
+            decoration: BoxDecoration(
+              color: dotColor,
               shape: BoxShape.circle,
             ),
           ),
-          const SizedBox(width: 5),
-          Text(
-            '$count $label',
-            style: const TextStyle(
-              color: AppColors.deepGreen,
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
+          const SizedBox(width: 6),
+          Expanded(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(
+                '$count $label',
+                style: GoogleFonts.plusJakartaSans(
+                  color: textColor,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.2,
+                ),
+              ),
             ),
           ),
         ],
@@ -627,12 +886,107 @@ class _StatusBadge extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// _ActivityCard  —  Recent Activity list inside a single white card
+// _ScheduledVetBanner — Section: Quick Shortcuts Banner (Figma node 7:85)
+// ---------------------------------------------------------------------------
+class _ScheduledVetBanner extends StatelessWidget {
+  final VoidCallback? onTap;
+
+  const _ScheduledVetBanner({this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFFFFF),
+        borderRadius: BorderRadius.circular(36),
+        border: Border.all(color: const Color(0x4DC1C8C2), width: 1),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x081B4332),
+            blurRadius: 12,
+            offset: Offset(0, 4),
+          ),
+          BoxShadow(
+            color: Color(0x0F1B4332),
+            blurRadius: 32,
+            offset: Offset(0, 12),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(36),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(36),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                // Green Circle Icon Badge
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: const BoxDecoration(
+                    color: Color(0x66AEEECB),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.calendar_month_rounded,
+                    color: Color(0xFF1B4332),
+                    size: 22,
+                  ),
+                ),
+                const SizedBox(width: 14),
+
+                // Text Content
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Scheduled Vet Check',
+                        style: GoogleFonts.plusJakartaSans(
+                          color: const Color(0xFF1B1C1A),
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Cow #04 health visit at 2:00 PM',
+                        style: GoogleFonts.plusJakartaSans(
+                          color: const Color(0xFF717973),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Trailing Arrow Icon
+                const Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  size: 14,
+                  color: Color(0xFF717973),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// _ActivityCard — Activity Feed List Container (Figma node 7:104)
 // ---------------------------------------------------------------------------
 class _ActivityCard extends StatelessWidget {
   final List<RecentActivity> activities;
   final VoidCallback onAddCowTap;
-  
+
   const _ActivityCard({
     required this.activities,
     required this.onAddCowTap,
@@ -644,22 +998,26 @@ class _ActivityCard extends StatelessWidget {
       return Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: AppColors.cardWhite,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
+          color: const Color(0xFFFFFFFF),
+          borderRadius: BorderRadius.circular(36),
+          border: Border.all(color: const Color(0x4DC1C8C2), width: 1),
+          boxShadow: const [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.06),
-              blurRadius: 14,
-              offset: const Offset(0, 4),
+              color: Color(0x0F1B4332),
+              blurRadius: 24,
+              offset: Offset(0, 8),
             ),
           ],
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
+            Text(
               'No recent activity',
-              style: TextStyle(color: AppColors.textGrey, fontSize: 14),
+              style: GoogleFonts.plusJakartaSans(
+                color: const Color(0xFF717973),
+                fontSize: 14,
+              ),
             ),
             const SizedBox(height: 16),
             ConstrainedBox(
@@ -669,13 +1027,13 @@ class _ActivityCard extends StatelessWidget {
                 icon: const Icon(Icons.add, size: 20),
                 label: const Text('Add Cow'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.deepGreen,
+                  backgroundColor: const Color(0xFF1B4332),
                   foregroundColor: Colors.white,
                   elevation: 0,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(24),
                   ),
-                  textStyle: const TextStyle(
+                  textStyle: GoogleFonts.plusJakartaSans(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
                   ),
@@ -689,27 +1047,27 @@ class _ActivityCard extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.cardWhite,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
+        color: const Color(0xFFFFFFFF),
+        borderRadius: BorderRadius.circular(36),
+        border: Border.all(color: const Color(0x4DC1C8C2), width: 1),
+        boxShadow: const [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 14,
-            offset: const Offset(0, 4),
+            color: Color(0x0F1B4332),
+            blurRadius: 24,
+            offset: Offset(0, 8),
           ),
         ],
       ),
       child: ListView.separated(
-        // Not scrollable itself — wrapped inside the outer CustomScrollView.
         physics: const NeverScrollableScrollPhysics(),
         shrinkWrap: true,
-        padding: const EdgeInsets.symmetric(vertical: 6),
+        padding: const EdgeInsets.symmetric(vertical: 8),
         itemCount: activities.length,
         separatorBuilder: (_, _) => const Divider(
           height: 1,
           indent: 68,
           endIndent: 20,
-          color: Color(0xFFE5E5EA),
+          color: Color(0xFFEFEEEB),
         ),
         itemBuilder: (context, index) {
           final item = activities[index];
@@ -721,7 +1079,7 @@ class _ActivityCard extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// _ActivityTile  —  A single row inside the activity card
+// _ActivityTile — A single row inside activity feed
 // ---------------------------------------------------------------------------
 class _ActivityTile extends StatelessWidget {
   final RecentActivity activity;
@@ -730,34 +1088,32 @@ class _ActivityTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final valueColor =
-        activity.isPositive ? AppColors.deepGreen : AppColors.textGrey;
+        activity.isPositive ? const Color(0xFF1B4332) : const Color(0xFF717973);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Leading circle icon
+          // Circle Icon Avatar
           Container(
-            width: 42,
-            height: 42,
+            width: 44,
+            height: 44,
             decoration: BoxDecoration(
               color: activity.isPositive
-                  ? AppColors.sageTint
-                  : const Color(0xFFEEEEEE),
+                  ? const Color(0x66AEEECB)
+                  : const Color(0xFFEFEEEB),
               shape: BoxShape.circle,
             ),
             child: Icon(
               activity.icon,
-              color: activity.isPositive
-                  ? AppColors.deepGreen
-                  : AppColors.textGrey,
+              color: const Color(0xFF1B4332),
               size: 20,
             ),
           ),
           const SizedBox(width: 14),
 
-          // Main text column (Left Side)
+          // Main text details
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -767,21 +1123,20 @@ class _ActivityTile extends StatelessWidget {
                   activity.title,
                   overflow: TextOverflow.ellipsis,
                   maxLines: 1,
-                  style: const TextStyle(
+                  style: GoogleFonts.plusJakartaSans(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.textDark,
-                    letterSpacing: -0.3,
+                    color: const Color(0xFF1B1C1A),
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 2),
                 ..._buildLeftDetails(),
               ],
             ),
           ),
           const SizedBox(width: 10),
 
-          // Right Side (Identifier / timestamp)
+          // Right Column
           ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 140),
             child: Column(
@@ -791,8 +1146,8 @@ class _ActivityTile extends StatelessWidget {
                   _getTopRightText(),
                   overflow: TextOverflow.ellipsis,
                   maxLines: 1,
-                  style: TextStyle(
-                    fontSize: 14,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 13,
                     fontWeight: FontWeight.w600,
                     color: valueColor,
                   ),
@@ -800,10 +1155,10 @@ class _ActivityTile extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   _getBottomRightText(),
-                  style: const TextStyle(
-                    color: AppColors.textGrey,
+                  style: GoogleFonts.plusJakartaSans(
+                    color: const Color(0xFF717973),
                     fontSize: 11,
-                    fontWeight: FontWeight.w400,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ],
@@ -824,7 +1179,10 @@ class _ActivityTile extends StatelessWidget {
   }
 
   String _getBottomRightText() {
-    if (activity.title == 'Payment Received' || activity.title == 'Milk Sold' || activity.title == 'Cow Removed' || activity.title == 'Buyer Removed') {
+    if (activity.title == 'Payment Received' ||
+        activity.title == 'Milk Sold' ||
+        activity.title == 'Cow Removed' ||
+        activity.title == 'Buyer Removed') {
       return _formatExactTime(activity.timeUnix);
     }
     return activity.time;
@@ -843,7 +1201,10 @@ class _ActivityTile extends StatelessWidget {
               text,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 13, color: AppColors.textGrey),
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 13,
+                color: const Color(0xFF717973),
+              ),
             ))
         .toList();
   }
@@ -853,15 +1214,16 @@ class _ActivityTile extends StatelessWidget {
     final hour = dt.hour == 0 ? 12 : (dt.hour > 12 ? dt.hour - 12 : dt.hour);
     final ampm = dt.hour >= 12 ? 'PM' : 'AM';
     final minutes = dt.minute.toString().padLeft(2, '0');
-    final monthStr = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][dt.month - 1];
+    final monthStr = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ][dt.month - 1];
     return '$hour:$minutes $ampm, $monthStr ${dt.day}';
   }
 }
 
 // ---------------------------------------------------------------------------
-// _DashboardNavBar
-// Matches the 4-tab layout in the mockup: Home | Milk | Buyers | Herd.
-// The active tab gets a circular sage-tint background pill.
+// _DashboardNavBar — Bottom Navigation Bar (Figma node 7:150)
 // ---------------------------------------------------------------------------
 class _DashboardNavBar extends StatelessWidget {
   final int currentIndex;
@@ -879,20 +1241,20 @@ class _DashboardNavBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: BoxDecoration(
-        color: AppColors.cardWhite,
+      decoration: const BoxDecoration(
+        color: Color(0xFFFFFFFF),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 20,
-            offset: const Offset(0, -4),
+            color: Color(0x0D1B4332),
+            blurRadius: 24,
+            offset: Offset(0, -4),
           ),
         ],
       ),
       child: SafeArea(
         top: false,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
@@ -955,27 +1317,26 @@ class _NavItem extends StatelessWidget {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 220),
         curve: Curves.easeInOut,
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
         decoration: BoxDecoration(
-          color: isActive ? AppColors.sageTint : Colors.transparent,
-          borderRadius: BorderRadius.circular(20),
+          color: isActive ? const Color(0xFFAEEECB) : Colors.transparent,
+          borderRadius: BorderRadius.circular(9999),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
               isActive ? activeIcon : icon,
-              color: isActive ? AppColors.deepGreen : AppColors.textGrey,
-              size: 24,
+              color: isActive ? const Color(0xFF012D1D) : const Color(0xFF717973),
+              size: 20,
             ),
-            const SizedBox(height: 3),
+            const SizedBox(height: 2),
             Text(
               label,
-              style: TextStyle(
-                color: isActive ? AppColors.deepGreen : AppColors.textGrey,
+              style: GoogleFonts.plusJakartaSans(
+                color: isActive ? const Color(0xFF012D1D) : const Color(0xFF717973),
                 fontSize: 11,
-                fontWeight:
-                    isActive ? FontWeight.w700 : FontWeight.w400,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ],
