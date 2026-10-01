@@ -6,9 +6,12 @@ import 'package:intl/intl.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/utils/money_utils.dart';
+import '../../../../core/utils/app_toast.dart';
 import '../widgets/custom_numpad.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../dodi_ledger/presentation/providers/dodi_provider.dart';
 import '../../../dodi_ledger/data/models/dodi_model.dart';
+import '../../../dodi_ledger/presentation/widgets/edit_buyer_sheet.dart';
 
 // ---------------------------------------------------------------------------
 // MilkEntryScreen
@@ -62,6 +65,9 @@ class _MilkEntryScreenState extends State<MilkEntryScreen> {
   int? _selectedDodiId;
   final TextEditingController _rateController = TextEditingController();
   final TextEditingController _loadTagController = TextEditingController(text: 'Load 1');
+  final TextEditingController _buyerSearchController = TextEditingController();
+  String _buyerSearchQuery = '';
+  int _buyerFilterIndex = 0; // 0 = All, 1 = Active, 2 = Binned
   DateTime _selectedDate = DateTime.now();
 
   static const int _maxIntegerDigits = 5;
@@ -83,8 +89,21 @@ class _MilkEntryScreenState extends State<MilkEntryScreen> {
       _rateController.text = MoneyUtils.formatPaiseToRupees(widget.initialRatePaise!);
     }
     
-    // Auto-fill rate if initialDodiId is provided
+    _buyerSearchController.addListener(() {
+      if (mounted) {
+        setState(() {
+          _buyerSearchQuery = _buyerSearchController.text.trim();
+        });
+      }
+    });
+
+    // Auto-fill rate if initialDodiId is provided and load deleted dodis for Binned tab
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      final auth = Provider.of<AuthProvider>(context, listen: false);
+      final userId = auth.currentUser?.id ?? 0;
+      final dodiProvider = Provider.of<DodiProvider>(context, listen: false);
+      dodiProvider.loadDeletedDodis(userId);
+
       if (_selectedDodiId != null && widget.initialRatePaise == null) {
         _populateRateForDodi(_selectedDodiId!);
       }
@@ -95,6 +114,7 @@ class _MilkEntryScreenState extends State<MilkEntryScreen> {
   void dispose() {
     _rateController.dispose();
     _loadTagController.dispose();
+    _buyerSearchController.dispose();
     super.dispose();
   }
 
@@ -223,10 +243,10 @@ class _MilkEntryScreenState extends State<MilkEntryScreen> {
     final dodiProvider = Provider.of<DodiProvider>(context);
 
     Widget body;
-    if (dodiProvider.dodis.isEmpty) {
+    if (dodiProvider.dodis.isEmpty && dodiProvider.deletedDodis.isEmpty) {
       body = _buildZeroDodiState();
     } else if (_selectedDodiId == null) {
-      body = _buildDodiSelectionState(dodiProvider.dodis);
+      body = _buildDodiSelectionState(dodiProvider);
     } else {
       body = _buildNumpadState();
     }
@@ -235,7 +255,8 @@ class _MilkEntryScreenState extends State<MilkEntryScreen> {
       backgroundColor: AppColors.bgGrey,
       appBar: _MilkEntryAppBar(
         cowLabel: _selectedDodiId != null 
-          ? (dodiProvider.dodis.where((d) => d.id == _selectedDodiId).firstOrNull?.name ?? widget.cowLabel)
+          ? (dodiProvider.dodis.where((d) => d.id == _selectedDodiId).firstOrNull?.name ?? 
+             dodiProvider.deletedDodis.where((d) => d.id == _selectedDodiId).firstOrNull?.name ?? widget.cowLabel)
           : 'Select Buyer',
         selectedDate: _selectedDate,
         onDateTap: _pickDate,
@@ -252,6 +273,8 @@ class _MilkEntryScreenState extends State<MilkEntryScreen> {
   }
 
   Widget _buildZeroDodiState() {
+    final authUser = Provider.of<AuthProvider>(context, listen: false).currentUser;
+    final userId = authUser?.id ?? 0;
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -263,53 +286,343 @@ class _MilkEntryScreenState extends State<MilkEntryScreen> {
         ),
         const SizedBox(height: 8),
         const Text(
-          'You need to add a buyer from the Buyers tab before recording milk.',
+          'Add a buyer to start recording milk entries for your daily collection.',
           textAlign: TextAlign.center,
           style: TextStyle(fontSize: 16, color: AppColors.textGrey),
         ),
         const SizedBox(height: 32),
-        ElevatedButton(
-          onPressed: () {
-            Navigator.of(context).pop(2);
-          },
+        ElevatedButton.icon(
+          onPressed: () => _openAddBuyerSheet(context, userId),
+          icon: const Icon(Icons.person_add_rounded, size: 20),
+          label: const Text('+ Register & Add New Buyer', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.deepGreen,
             foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
           ),
-          child: const Text('Go to Buyers', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
         ),
       ],
     );
   }
 
-  Widget _buildDodiSelectionState(List<DodiModel> dodis) {
-    return ListView.builder(
-      itemCount: dodis.length,
-      itemBuilder: (context, index) {
-        final dodi = dodis[index];
-        return Card(
-          color: AppColors.cardWhite,
-          margin: const EdgeInsets.only(bottom: 12),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          child: ListTile(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-            leading: const CircleAvatar(
-              backgroundColor: AppColors.cardSubtle,
-              child: Icon(Icons.person, color: AppColors.sageGreen),
+  Widget _buildDodiSelectionState(DodiProvider dodiProvider) {
+    final authUser = Provider.of<AuthProvider>(context, listen: false).currentUser;
+    final userId = authUser?.id ?? 0;
+
+    final activeItems = dodiProvider.dodis.map((d) => _BuyerListItem(dodi: d, isBinned: false)).toList();
+    final binnedItems = dodiProvider.deletedDodis.map((d) => _BuyerListItem(dodi: d, isBinned: true)).toList();
+
+    List<_BuyerListItem> displayedList;
+    if (_buyerFilterIndex == 1) {
+      displayedList = activeItems;
+    } else if (_buyerFilterIndex == 2) {
+      displayedList = binnedItems;
+    } else {
+      displayedList = [...activeItems, ...binnedItems];
+    }
+
+    if (_buyerSearchQuery.isNotEmpty) {
+      final query = _buyerSearchQuery.toLowerCase();
+      displayedList = displayedList.where((item) {
+        final nameMatch = item.dodi.name.toLowerCase().contains(query);
+        final phoneMatch = item.dodi.phone != null && item.dodi.phone!.contains(query);
+        return nameMatch || phoneMatch;
+      }).toList();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const SizedBox(height: 12),
+        // Search Bar
+        TextField(
+          controller: _buyerSearchController,
+          style: const TextStyle(fontSize: 15, color: AppColors.textDark),
+          decoration: InputDecoration(
+            hintText: 'Search buyer name or phone...',
+            hintStyle: const TextStyle(color: AppColors.textGrey, fontSize: 14),
+            prefixIcon: const Icon(Icons.search_rounded, color: AppColors.deepGreen, size: 22),
+            suffixIcon: _buyerSearchQuery.isNotEmpty
+                ? IconButton(
+                    icon: const Icon(Icons.close_rounded, color: AppColors.textGrey, size: 20),
+                    onPressed: () => _buyerSearchController.clear(),
+                  )
+                : null,
+            filled: true,
+            fillColor: AppColors.cardWhite,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide.none,
             ),
-            title: Text(dodi.name, style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.textDark)),
-            subtitle: Text('Rate: ${AppStrings.currency} ${MoneyUtils.formatPaiseToRupees(dodi.defaultRatePaise)}/${AppStrings.weightUnit}', style: const TextStyle(color: AppColors.textGrey)),
-            onTap: () {
-              setState(() {
-                _selectedDodiId = dodi.id;
-              });
-              _populateRateForDodi(dodi.id!);
-            },
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: const BorderSide(color: AppColors.cardSubtle, width: 1),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: const BorderSide(color: AppColors.deepGreen, width: 1.5),
+            ),
           ),
+        ),
+        const SizedBox(height: 12),
+        // Filter Chips Bar
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              _buildFilterChip(
+                label: 'All (${activeItems.length + binnedItems.length})',
+                isSelected: _buyerFilterIndex == 0,
+                onTap: () => setState(() => _buyerFilterIndex = 0),
+              ),
+              const SizedBox(width: 8),
+              _buildFilterChip(
+                label: 'Active (${activeItems.length})',
+                isSelected: _buyerFilterIndex == 1,
+                onTap: () => setState(() => _buyerFilterIndex = 1),
+              ),
+              const SizedBox(width: 8),
+              _buildFilterChip(
+                label: 'Binned (${binnedItems.length})',
+                isSelected: _buyerFilterIndex == 2,
+                onTap: () => setState(() => _buyerFilterIndex = 2),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 14),
+        // Buyer Cards List
+        Expanded(
+          child: displayedList.isEmpty
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.person_search_rounded, size: 48, color: AppColors.textGrey),
+                      const SizedBox(height: 12),
+                      Text(
+                        _buyerSearchQuery.isNotEmpty ? 'No buyers found for "$_buyerSearchQuery"' : 'No buyers in this category',
+                        style: const TextStyle(fontSize: 15, color: AppColors.textGrey, fontWeight: FontWeight.w500),
+                      ),
+                    ],
+                  ),
+                )
+              : ListView.builder(
+                  itemCount: displayedList.length,
+                  itemBuilder: (context, index) {
+                    final item = displayedList[index];
+                    final dodi = item.dodi;
+                    final isBinned = item.isBinned;
+
+                    return Card(
+                      color: isBinned ? const Color(0xFFF1F5F9) : AppColors.cardWhite,
+                      elevation: isBinned ? 0 : 1,
+                      margin: const EdgeInsets.only(bottom: 10),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        side: isBinned
+                            ? const BorderSide(color: Color(0xFFE2E8F0), width: 1)
+                            : BorderSide.none,
+                      ),
+                      child: ListTile(
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                        leading: CircleAvatar(
+                          backgroundColor: isBinned ? const Color(0xFFCBD5E1) : AppColors.cardSubtle,
+                          child: Icon(
+                            isBinned ? Icons.archive_outlined : Icons.person_rounded,
+                            color: isBinned ? AppColors.textGrey : AppColors.deepGreen,
+                            size: 22,
+                          ),
+                        ),
+                        title: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                dodi.name,
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                  color: isBinned ? AppColors.textGrey : AppColors.textDark,
+                                ),
+                              ),
+                            ),
+                            if (isBinned)
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFE2E8F0),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Text(
+                                  'Binned',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.textGrey,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                        subtitle: Text(
+                          'Rate: ${AppStrings.currency} ${MoneyUtils.formatPaiseToRupees(dodi.defaultRatePaise)}/${AppStrings.weightUnit}${dodi.phone != null && dodi.phone!.isNotEmpty ? " • ${dodi.phone}" : ""}',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: isBinned ? AppColors.textGrey.withValues(alpha: 0.8) : AppColors.textGrey,
+                          ),
+                        ),
+                        trailing: Icon(
+                          isBinned ? Icons.restore_rounded : Icons.chevron_right_rounded,
+                          color: isBinned ? AppColors.deepGreen : AppColors.sageGreen,
+                          size: 22,
+                        ),
+                        onTap: () {
+                          if (isBinned) {
+                            _showRestoreConfirmationDialog(context, dodi, userId, dodiProvider);
+                          } else {
+                            setState(() {
+                              _selectedDodiId = dodi.id;
+                            });
+                            _populateRateForDodi(dodi.id!);
+                          }
+                        },
+                      ),
+                    );
+                  },
+                ),
+        ),
+        const SizedBox(height: 10),
+        // Persistent "+ Register & Add New Buyer" Button
+        SizedBox(
+          height: 52,
+          child: ElevatedButton.icon(
+            onPressed: () => _openAddBuyerSheet(context, userId),
+            icon: const Icon(Icons.person_add_rounded, size: 20),
+            label: const Text(
+              '+ Register & Add New Buyer',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.deepGreen,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(26)),
+              elevation: 2,
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+      ],
+    );
+  }
+
+  Widget _buildFilterChip({
+    required String label,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.deepGreen : AppColors.cardWhite,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected ? AppColors.deepGreen : AppColors.cardSubtle,
+            width: 1,
+          ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: AppColors.deepGreen.withValues(alpha: 0.25),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isSelected ? Colors.white : AppColors.textDark,
+            fontSize: 13,
+            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showRestoreConfirmationDialog(
+    BuildContext context,
+    DodiModel dodi,
+    int userId,
+    DodiProvider dodiProvider,
+  ) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Row(
+            children: [
+              Icon(Icons.restore_rounded, color: AppColors.deepGreen, size: 26),
+              SizedBox(width: 10),
+              Text('Restore Buyer?'),
+            ],
+          ),
+          content: Text(
+            '"${dodi.name}" is currently in the Bin. Would you like to restore this buyer to Active so you can select them for milk entry?',
+            style: const TextStyle(fontSize: 15, color: AppColors.textDark),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Cancel', style: TextStyle(color: AppColors.textGrey)),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                Navigator.of(dialogContext).pop();
+                final success = await dodiProvider.restoreDodi(dodi.id!, userId);
+                if (mounted && success) {
+                  setState(() {
+                    _selectedDodiId = dodi.id;
+                  });
+                  _populateRateForDodi(dodi.id!);
+                  if (mounted) {
+                    AppToast.showSuccess(context, '${dodi.name} restored to active buyers');
+                  }
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.deepGreen,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              ),
+              child: const Text('Restore & Select'),
+            ),
+          ],
         );
       },
+    );
+  }
+
+  void _openAddBuyerSheet(BuildContext context, int userId) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => EditBuyerSheet(
+        dodi: DodiModel(
+          userId: userId,
+          name: '',
+          defaultRatePaise: 6000,
+        ),
+        userId: userId,
+      ),
     );
   }
 
@@ -657,3 +970,10 @@ class _SaveButton extends StatelessWidget {
     );
   }
 }
+
+class _BuyerListItem {
+  final DodiModel dodi;
+  final bool isBinned;
+  _BuyerListItem({required this.dodi, required this.isBinned});
+}
+
