@@ -1,11 +1,9 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart' show Icons;
 
 import '../../data/models/dodi_dashboard_summary.dart';
 import '../../data/models/dodi_model.dart';
 import '../../data/repositories/dodi_repository.dart';
 import 'package:dairy_farm_app/features/milk_entry/data/models/ledger_entry_model.dart';
-import '../../../dashboard/data/models/activity_log_model.dart';
 import '../../../dashboard/presentation/providers/activity_log_provider.dart';
 
 /// Loading state for async dodi operations.

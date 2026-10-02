@@ -252,7 +252,8 @@ class _MilkEntryScreenState extends State<MilkEntryScreen> {
     }
 
     return Scaffold(
-      backgroundColor: AppColors.bgGrey,
+      backgroundColor: AppColors.creamBg,
+      resizeToAvoidBottomInset: true,
       appBar: _MilkEntryAppBar(
         cowLabel: _selectedDodiId != null 
           ? (dodiProvider.dodis.where((d) => d.id == _selectedDodiId).firstOrNull?.name ?? 
@@ -593,7 +594,7 @@ class _MilkEntryScreenState extends State<MilkEntryScreen> {
                   });
                   _populateRateForDodi(dodi.id!);
                   if (mounted) {
-                    AppToast.showSuccess(context, '${dodi.name} restored to active buyers');
+                    AppToast.showSuccess(this.context, '${dodi.name} restored to active buyers');
                   }
                 }
               },
@@ -628,46 +629,205 @@ class _MilkEntryScreenState extends State<MilkEntryScreen> {
 
   Widget _buildNumpadState() {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const SizedBox(height: 10),
-        _QuantityDisplay(value: _displayValue),
-        const SizedBox(height: 10),
-        // Rate input field
-        TextField(
-          controller: _rateController,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.deepGreen),
-          decoration: AppTheme.filledInputDecoration(
-            labelText: 'Rate (${AppStrings.currency}/${AppStrings.weightUnit}) *',
-            prefixIcon: const Icon(Icons.attach_money_rounded, size: 20, color: AppColors.deepGreen),
-          ),
-        ),
-        const SizedBox(height: 8),
-        // Load Tag input field
-        TextField(
-          controller: _loadTagController,
-          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.textDark),
-          decoration: AppTheme.filledInputDecoration(
-            labelText: 'Load Tag / Label (e.g. Load 1, Tanker A) *',
-            prefixIcon: const Icon(Icons.label_outline_rounded, size: 20, color: AppColors.deepGreen),
-          ),
-        ),
-        const SizedBox(height: 10),
-        _SessionToggle(
-          selected: _session,
-          onChanged: (s) {
-            try { HapticFeedback.selectionClick(); } catch (_) {}
-            setState(() => _session = s);
-          },
-        ),
-        const SizedBox(height: 10),
         Expanded(
-          child: CustomNumpad(onKeyTap: _handleKey),
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const SizedBox(height: 8),
+                _QuantityDisplay(value: _displayValue),
+                const SizedBox(height: 10),
+                _buildAuxiliaryCards(),
+                const SizedBox(height: 10),
+                _SessionToggle(
+                  selected: _session,
+                  onChanged: (s) {
+                    try { HapticFeedback.selectionClick(); } catch (_) {}
+                    setState(() => _session = s);
+                  },
+                ),
+                const SizedBox(height: 10),
+                CustomNumpad(onKeyTap: _handleKey),
+                const SizedBox(height: 12),
+              ],
+            ),
+          ),
         ),
-        const SizedBox(height: 12),
-        _SaveButton(onTap: _handleSave),
-        const SizedBox(height: 12),
+        SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.only(top: 8, bottom: 12),
+            child: _SaveButton(onTap: _handleSave),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAuxiliaryCards() {
+    final scale = MediaQuery.textScalerOf(context).scale(1.0);
+    final width = MediaQuery.of(context).size.width;
+    final isStacked = scale > 1.3 || width < 360;
+
+    Widget buildRateCard() {
+      return Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: AppColors.mintCardBg,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0x1A065F46), width: 1),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 2,
+              offset: const Offset(0, 1),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'RATE (RS/KG) *',
+                  style: TextStyle(
+                    fontFamily: 'PlusJakartaSans',
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xB3064E3B),
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                Icon(Icons.edit_outlined, size: 13, color: Color(0xB3064E3B)),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                const Text(
+                  'Rs',
+                  style: TextStyle(
+                    fontFamily: 'PlusJakartaSans',
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF065F46),
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: TextField(
+                    controller: _rateController,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    style: const TextStyle(
+                      fontFamily: 'PlusJakartaSans',
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.darkForest,
+                      letterSpacing: -0.3,
+                    ),
+                    decoration: const InputDecoration(
+                      border: InputBorder.none,
+                      isDense: true,
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+    }
+
+    Widget buildLoadTagCard() {
+      return Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: AppColors.mintCardBg,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0x1A065F46), width: 1),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 2,
+              offset: const Offset(0, 1),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'LOAD TAG *',
+                  style: TextStyle(
+                    fontFamily: 'PlusJakartaSans',
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xB3064E3B),
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                Icon(Icons.local_shipping_outlined, size: 13, color: Color(0xB3064E3B)),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFF10B981),
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: TextField(
+                    controller: _loadTagController,
+                    style: const TextStyle(
+                      fontFamily: 'PlusJakartaSans',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.darkForest,
+                      letterSpacing: -0.3,
+                    ),
+                    decoration: const InputDecoration(
+                      border: InputBorder.none,
+                      isDense: true,
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (isStacked) {
+      return Column(
+        children: [
+          SizedBox(width: double.infinity, child: buildRateCard()),
+          const SizedBox(height: 10),
+          SizedBox(width: double.infinity, child: buildLoadTagCard()),
+        ],
+      );
+    }
+
+    return Row(
+      children: [
+        Expanded(child: buildRateCard()),
+        const SizedBox(width: 10),
+        Expanded(child: buildLoadTagCard()),
       ],
     );
   }
@@ -681,87 +841,140 @@ class _MilkEntryAppBar extends StatelessWidget implements PreferredSizeWidget {
   final DateTime selectedDate;
   final VoidCallback onDateTap;
   final bool showDateChip;
-  const _MilkEntryAppBar({required this.cowLabel, required this.selectedDate, required this.onDateTap, this.showDateChip = true});
+  const _MilkEntryAppBar({
+    required this.cowLabel,
+    required this.selectedDate,
+    required this.onDateTap,
+    this.showDateChip = true,
+  });
 
   @override
-  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
+  Size get preferredSize => const Size.fromHeight(64);
 
   @override
   Widget build(BuildContext context) {
     return AppBar(
-      backgroundColor: AppColors.bgGrey,
+      backgroundColor: AppColors.creamBg,
       elevation: 0,
       scrolledUnderElevation: 0,
-      centerTitle: true,
-      leading: Padding(
-        padding: const EdgeInsets.only(left: 16),
-        child: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: () {
-            try { HapticFeedback.lightImpact(); } catch (_) {}
-            FocusScope.of(context).unfocus();
-            if (ModalRoute.of(context)?.isCurrent == true) {
-              Navigator.of(context).pop();
-            }
-          },
-          child: Container(
-            width: 36,
-            height: 36,
-            decoration: const BoxDecoration(
-              color: Color(0xFFE5E5EA),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.close_rounded,
-              color: AppColors.textDark,
-              size: 20,
-            ),
-          ),
-        ),
-      ),
-      title: Text(
-        cowLabel,
-        style: const TextStyle(
-          color: AppColors.textDark,
-          fontSize: 17,
-          fontWeight: FontWeight.w600,
-          letterSpacing: -0.3,
-        ),
-      ),
-      actions: [
-        if (showDateChip)
-          Padding(
-            padding: const EdgeInsets.only(right: 16),
+      automaticallyImplyLeading: false,
+      titleSpacing: 16,
+      title: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          // Close button with 48px tap area & 40px visual container
+          SizedBox(
+            width: 48,
+            height: 48,
             child: Center(
               child: InkWell(
-                onTap: onDateTap,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(9999),
+                onTap: () {
+                  try { HapticFeedback.lightImpact(); } catch (_) {}
+                  FocusScope.of(context).unfocus();
+                  if (ModalRoute.of(context)?.isCurrent == true) {
+                    Navigator.of(context).pop();
+                  }
+                },
                 child: Container(
-                  constraints: const BoxConstraints(maxWidth: 140),
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  width: 40,
+                  height: 40,
                   decoration: BoxDecoration(
-                    color: AppColors.sageTint,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.calendar_today, size: 16, color: AppColors.deepGreen),
-                      const SizedBox(width: 6),
-                      Flexible(
-                        child: Text(
-                          DateFormat('yyyy-MM-dd').format(selectedDate),
-                          style: const TextStyle(color: AppColors.deepGreen, fontWeight: FontWeight.w600, fontSize: 13),
-                          overflow: TextOverflow.ellipsis,
-                        ),
+                    color: AppColors.cardWhite,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: const Color(0x7CE7E5E4), width: 1),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.05),
+                        blurRadius: 2,
+                        offset: const Offset(0, 1),
                       ),
                     ],
+                  ),
+                  child: const Icon(
+                    Icons.close_rounded,
+                    color: AppColors.darkForest,
+                    size: 20,
                   ),
                 ),
               ),
             ),
           ),
-      ],
+          const SizedBox(width: 8),
+          // Center Buyer Name Stack with Ellipsis Protection
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                const Text(
+                  'MILK BUYER',
+                  style: TextStyle(
+                    fontFamily: 'PlusJakartaSans',
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xB3065F46),
+                    letterSpacing: 0.5,
+                    height: 1.2,
+                  ),
+                ),
+                Text(
+                  cowLabel,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontFamily: 'PlusJakartaSans',
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.darkForest,
+                    letterSpacing: -0.3,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          // Right Date Badge Pill
+          if (showDateChip)
+            InkWell(
+              onTap: onDateTap,
+              borderRadius: BorderRadius.circular(9999),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: const Color(0x99D8F3DC),
+                  borderRadius: BorderRadius.circular(9999),
+                  border: Border.all(color: const Color(0xCCA7F3D0), width: 1),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.05),
+                      blurRadius: 2,
+                      offset: const Offset(0, 1),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.calendar_today_rounded, size: 14, color: AppColors.darkForest),
+                    const SizedBox(width: 6),
+                    Text(
+                      DateFormat('yyyy-MM-dd').format(selectedDate),
+                      style: const TextStyle(
+                        fontFamily: 'PlusJakartaSans',
+                        color: AppColors.darkForest,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          else
+            const SizedBox(width: 48),
+        ],
+      ),
     );
   }
 }
@@ -783,55 +996,134 @@ class _QuantityDisplay extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      constraints: const BoxConstraints(minHeight: 125.5),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       decoration: BoxDecoration(
-        color: AppColors.cardSubtle,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE0E0E5), width: 1),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(
-              AppStrings.weightLabel,
-              style: Theme.of(context).textTheme.labelSmall,
-            ),
+        color: AppColors.cardWhite,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0x0D064E3B), width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0x0D1B4332),
+            blurRadius: 24,
+            offset: const Offset(0, 8),
           ),
-          const SizedBox(height: 6),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.center,
-            child: RichText(
-              textAlign: TextAlign.center,
-              text: TextSpan(
-                children: [
-                  TextSpan(
-                    text: intPart,
-                    style: const TextStyle(
-                      color: AppColors.textDark,
-                      fontSize: 64,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -3,
-                      height: 1.0,
-                    ),
-                  ),
-                  if (hasDecimal)
-                    TextSpan(
-                      text: decPart,
-                      style: const TextStyle(
-                        color: AppColors.textGrey,
-                        fontSize: 64,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: -3,
-                        height: 1.0,
-                      ),
-                    ),
-                ],
+        ],
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            right: -10,
+            top: -10,
+            child: Opacity(
+              opacity: 0.03,
+              child: const Icon(
+                Icons.scale_rounded,
+                size: 110,
+                color: AppColors.darkForest,
               ),
             ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text(
+                    'WEIGHT METRIC',
+                    style: TextStyle(
+                      fontFamily: 'PlusJakartaSans',
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0x99065F46),
+                      letterSpacing: 1.0,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEAF8ED),
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(color: const Color(0xFFD8F3DC), width: 1),
+                    ),
+                    child: const Text(
+                      'KG',
+                      style: TextStyle(
+                        fontFamily: 'PlusJakartaSans',
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.darkForest,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.center,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
+                  children: [
+                    RichText(
+                      textAlign: TextAlign.center,
+                      text: TextSpan(
+                        children: [
+                          TextSpan(
+                            text: intPart,
+                            style: const TextStyle(
+                              fontFamily: 'PlusJakartaSans',
+                              color: AppColors.darkForest,
+                              fontSize: 48,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: -1.2,
+                              height: 1.0,
+                            ),
+                          ),
+                          if (hasDecimal)
+                            TextSpan(
+                              text: decPart,
+                              style: const TextStyle(
+                                fontFamily: 'PlusJakartaSans',
+                                color: Color(0xFFA8A29E),
+                                fontSize: 48,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: -1.2,
+                                height: 1.0,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    const Text(
+                      'kg',
+                      style: TextStyle(
+                        fontFamily: 'PlusJakartaSans',
+                        color: Color(0xFFA8A29E),
+                        fontSize: 20,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 6),
+              const Text(
+                'Touchpad entry ready',
+                style: TextStyle(
+                  fontFamily: 'PlusJakartaSans',
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xFFA8A29E),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -851,11 +1143,18 @@ class _SessionToggle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 52,
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: const Color(0xFFE8E8EE),
-        borderRadius: BorderRadius.circular(28),
+        color: const Color(0xE6FFFFFF),
+        borderRadius: BorderRadius.circular(9999),
+        border: Border.all(color: const Color(0xCCE7E5E4), width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 4,
+            offset: const Offset(0, 1),
+          ),
+        ],
       ),
       child: Row(
         children: [
@@ -898,14 +1197,15 @@ class _ToggleSegment extends StatelessWidget {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 220),
           curve: Curves.easeInOut,
+          padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
-            color: isSelected ? AppColors.deepGreen : Colors.transparent,
-            borderRadius: BorderRadius.circular(24),
+            color: isSelected ? const Color(0xFF1B4332) : Colors.transparent,
+            borderRadius: BorderRadius.circular(9999),
             boxShadow: isSelected
                 ? [
                     BoxShadow(
-                      color: AppColors.deepGreen.withValues(alpha: 0.30),
-                      blurRadius: 10,
+                      color: const Color(0xFF1B4332).withValues(alpha: 0.30),
+                      blurRadius: 8,
                       offset: const Offset(0, 3),
                     ),
                   ]
@@ -916,17 +1216,17 @@ class _ToggleSegment extends StatelessWidget {
             children: [
               Icon(
                 icon,
-                size: 18,
-                color: isSelected ? Colors.white : AppColors.textGrey,
+                size: 16,
+                color: isSelected ? Colors.white : const Color(0xFF57534E),
               ),
               const SizedBox(width: 6),
               Text(
                 label,
                 style: TextStyle(
-                  color: isSelected ? Colors.white : AppColors.textGrey,
-                  fontSize: 15,
-                  fontWeight:
-                      isSelected ? FontWeight.w700 : FontWeight.w500,
+                  fontFamily: 'PlusJakartaSans',
+                  color: isSelected ? Colors.white : const Color(0xFF57534E),
+                  fontSize: 14,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                 ),
               ),
             ],
@@ -946,25 +1246,47 @@ class _SaveButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 60,
-      child: ElevatedButton.icon(
+    return Container(
+      constraints: const BoxConstraints(minHeight: 56),
+      height: 56,
+      width: double.infinity,
+      child: ElevatedButton(
         onPressed: onTap,
-        icon: const Icon(Icons.check_circle_outline_rounded, size: 22),
-        label: const Text(AppStrings.saveEntry),
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.deepGreen,
+          backgroundColor: const Color(0xFF1B4332),
           foregroundColor: Colors.white,
           elevation: 0,
-          shadowColor: Colors.transparent,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(30),
+            borderRadius: BorderRadius.circular(9999),
           ),
-          textStyle: const TextStyle(
-            fontSize: 17,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 0.2,
-          ),
+          shadowColor: const Color(0xFF1B4332).withValues(alpha: 0.35),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(3),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.20),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.check_circle_outline_rounded,
+                color: Colors.white,
+                size: 18,
+              ),
+            ),
+            const SizedBox(width: 10),
+            const Text(
+              AppStrings.saveEntry,
+              style: TextStyle(
+                fontFamily: 'PlusJakartaSans',
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.3,
+              ),
+            ),
+          ],
         ),
       ),
     );

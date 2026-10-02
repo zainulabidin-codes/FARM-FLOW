@@ -44,6 +44,18 @@ abstract final class AppColors {
   /// Dry/neutral status — light slate.
   static const Color dryGrey = Color(0xFFEEEEEE);
 
+  /// Figma redesign — Cream screen background.
+  static const Color creamBg = Color(0xFFFBF9F5);
+
+  /// Figma redesign — Dark forest primary text and headers.
+  static const Color darkForest = Color(0xFF143826);
+
+  /// Figma redesign — Muted backspace button background.
+  static const Color backspaceBg = Color(0xFFF5F5F4);
+
+  /// Figma redesign — Soft mint tint for auxiliary form cards.
+  static const Color mintCardBg = Color(0xB3EAF8ED);
+
   /// Dry/neutral text.
   static const Color dryGreyText = Color(0xFF757575);
 }

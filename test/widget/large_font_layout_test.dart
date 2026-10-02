@@ -15,7 +15,6 @@ import 'package:dairy_farm_app/features/dashboard/presentation/pages/dashboard_s
 import 'package:dairy_farm_app/features/cows/presentation/pages/cows_screen.dart';
 import 'package:dairy_farm_app/features/cows/presentation/pages/edit_cow_sheet.dart';
 import 'package:dairy_farm_app/features/milk_entry/presentation/pages/milk_entry_screen.dart';
-import 'package:dairy_farm_app/features/shell/presentation/pages/app_shell.dart';
 
 // Fake Dodi Provider to simulate having buyers
 class FakeDodiProvider extends DodiProvider {
@@ -120,11 +119,11 @@ void main() {
       final key9 = find.text('9');
       final key0 = find.text('0');
       if (key9.evaluate().isNotEmpty && key0.evaluate().isNotEmpty) {
-        await tester.tap(key9);
+        await tester.tap(key9, warnIfMissed: false);
         await tester.pump();
-        await tester.tap(key0);
+        await tester.tap(key0, warnIfMissed: false);
         await tester.pump();
-        await tester.tap(key0);
+        await tester.tap(key0, warnIfMissed: false);
         await tester.pumpAndSettle();
       }
       

@@ -61,72 +61,51 @@ class CustomNumpad extends StatelessWidget {
     required this.onKeyTap,
   });
 
-  // The ordered grid — top-left to bottom-right.
-  static const List<NumpadKey> _keys = [
-    NumpadKey.one,
-    NumpadKey.two,
-    NumpadKey.three,
-    NumpadKey.four,
-    NumpadKey.five,
-    NumpadKey.six,
-    NumpadKey.seven,
-    NumpadKey.eight,
-    NumpadKey.nine,
-    NumpadKey.decimal,
-    NumpadKey.zero,
-    NumpadKey.backspace,
-  ];
-
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        // Calculate the ideal aspect ratio so that 4 rows of buttons exactly fill
-        // the available height inside this widget, preventing any cutoff.
-        // We have 3 columns (2 inner spaces) and 4 rows (3 inner spaces).
-        const double crossAxisSpacing = 10;
-        const double mainAxisSpacing = 10;
+    const double rowGap = 10;
+    const double colGap = 10;
 
-        final double availableWidth = constraints.maxWidth;
-        final double availableHeight = constraints.maxHeight;
+    final rows = [
+      [NumpadKey.one, NumpadKey.two, NumpadKey.three],
+      [NumpadKey.four, NumpadKey.five, NumpadKey.six],
+      [NumpadKey.seven, NumpadKey.eight, NumpadKey.nine],
+      [NumpadKey.decimal, NumpadKey.zero, NumpadKey.backspace],
+    ];
 
-        final double itemWidth = (availableWidth - (crossAxisSpacing * 2)) / 3;
-        final double itemHeight = (availableHeight - (mainAxisSpacing * 3)) / 4;
-
-        // Ensure we don't pass an invalid aspect ratio if constraints are strange
-        final double aspectRatio = (itemHeight > 0) ? (itemWidth / itemHeight) : 1.15;
-
-        return GridView.builder(
-          physics: const NeverScrollableScrollPhysics(),
-          shrinkWrap: true,
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 3,
-            childAspectRatio: aspectRatio,
-            mainAxisSpacing: mainAxisSpacing,
-            crossAxisSpacing: crossAxisSpacing,
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: rows.asMap().entries.map((entry) {
+        final rowIndex = entry.key;
+        final rowKeys = entry.value;
+        return Padding(
+          padding: EdgeInsets.only(bottom: rowIndex < rows.length - 1 ? rowGap : 0),
+          child: Row(
+            children: rowKeys.asMap().entries.map((keyEntry) {
+              final colIndex = keyEntry.key;
+              final key = keyEntry.value;
+              return Expanded(
+                child: Padding(
+                  padding: EdgeInsets.only(right: colIndex < rowKeys.length - 1 ? colGap : 0),
+                  child: _NumpadButton(
+                    numpadKey: key,
+                    onTap: () {
+                      try { HapticFeedback.lightImpact(); } catch (_) {}
+                      onKeyTap(key);
+                    },
+                  ),
+                ),
+              );
+            }).toList(),
           ),
-          itemCount: _keys.length,
-          itemBuilder: (context, index) {
-            final key = _keys[index];
-            return _NumpadButton(
-              numpadKey: key,
-              onTap: () {
-                try { HapticFeedback.lightImpact(); } catch (_) {}
-                onKeyTap(key);
-              },
-            );
-          },
         );
-      },
+      }).toList(),
     );
   }
 }
 
 // ---------------------------------------------------------------------------
 // _NumpadButton
-// A single large circular key. Numbers use a bright white circle;
-// the backspace key uses a slightly tinted grey circle to visually
-// distinguish it — exactly as in the mockup.
 // ---------------------------------------------------------------------------
 class _NumpadButton extends StatefulWidget {
   final NumpadKey numpadKey;
@@ -189,18 +168,20 @@ class _NumpadButtonState extends State<_NumpadButton>
       child: ScaleTransition(
         scale: _scaleAnim,
         child: Container(
-          // Minimum 60 px height enforced by the grid's childAspectRatio.
-          constraints: const BoxConstraints(minHeight: 60),
+          constraints: const BoxConstraints(minHeight: 56),
+          height: 56,
           decoration: BoxDecoration(
-            color: _isBackspace
-                ? const Color(0xFFE8E8EE) // distinct tint for backspace
-                : AppColors.cardWhite,
-            shape: BoxShape.circle,
+            color: _isBackspace ? AppColors.backspaceBg : AppColors.cardWhite,
+            borderRadius: BorderRadius.circular(9999),
+            border: Border.all(
+              color: _isBackspace ? const Color(0xFFE7E5E4) : const Color(0xFFF5F5F4),
+              width: 1,
+            ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: _isBackspace ? 0.04 : 0.07),
-                blurRadius: 8,
-                offset: const Offset(0, 3),
+                color: AppColors.darkForest.withValues(alpha: 0.04),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
               ),
             ],
           ),
@@ -214,24 +195,23 @@ class _NumpadButtonState extends State<_NumpadButton>
     if (_isBackspace) {
       return const Icon(
         Icons.backspace_outlined,
-        color: AppColors.textDark,
-        size: 26,
+        color: AppColors.darkForest,
+        size: 22,
       );
     }
 
     final char = widget.numpadKey.character ?? '';
-
-    // The decimal point is rendered smaller so it aligns optically.
     final bool isDecimal = widget.numpadKey == NumpadKey.decimal;
 
     return FittedBox(
       fit: BoxFit.scaleDown,
       child: Text(
-        char,
-        style: TextStyle(
-          color: AppColors.textDark,
-          fontSize: isDecimal ? 30 : 32,
-          fontWeight: FontWeight.w500,
+        isDecimal ? '·' : char,
+        style: const TextStyle(
+          fontFamily: 'PlusJakartaSans',
+          color: AppColors.darkForest,
+          fontSize: 24,
+          fontWeight: FontWeight.w700,
           height: 1.0,
         ),
       ),

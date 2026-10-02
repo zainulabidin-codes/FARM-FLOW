@@ -82,7 +82,7 @@ class _ActivityLogScreenState extends State<ActivityLogScreen> {
                     physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
                     padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
                     itemCount: activities.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 12),
+                    separatorBuilder: (context, index) => const SizedBox(height: 12),
                     itemBuilder: (context, index) {
                       final activity = activities[index];
                       return _ExpandableActivityCard(activity: activity);
