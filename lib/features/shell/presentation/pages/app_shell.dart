@@ -952,6 +952,12 @@ class AppShellState extends State<AppShell> with WidgetsBindingObserver {
           context,
         ).push(MaterialPageRoute(builder: (_) => const ActivityLogScreen())),
         onNavTap: _onNavTap,
+        onVetCheckBannerTap: () => AppRouter.pushScheduleVetCheck(
+          context,
+          cowName: 'Unknown Cow',
+          cowTag: '---',
+          shed: '---',
+        ),
         onMilkCardAction: (action) async {
           final connector = context.read<MilkCardActionsConnector>();
           final result = await connector.executeAction(action);

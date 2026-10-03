@@ -13,6 +13,7 @@ import '../../features/cows/presentation/providers/cow_provider.dart';
 import '../../features/dashboard/presentation/providers/activity_log_provider.dart';
 import '../utils/app_toast.dart';
 import 'package:dairy_farm_app/features/milk_entry/presentation/widgets/conflict_resolution_dialog.dart';
+import '../../features/dashboard/presentation/pages/schedule_vet_check_screen.dart';
 
 // ---------------------------------------------------------------------------
 // AppRouter
@@ -289,6 +290,29 @@ abstract final class AppRouter {
               AppToast.showError(context, milkProvider.errorMessage ?? 'Failed to update.');
             }
           },
+        ),
+      ),
+    );
+  }
+
+  /// Push the Schedule Vet Check Screen as a fullscreen modal.
+  static Future<void> pushScheduleVetCheck(
+    BuildContext context, {
+    required String cowName,
+    required String cowTag,
+    required String shed,
+    List<VetDoctor> doctors = const [],
+    List<String> presetReasons = const [],
+  }) {
+    return Navigator.of(context).push(
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (_) => ScheduleVetCheckScreen(
+          cowName: cowName,
+          cowTag: cowTag,
+          shed: shed,
+          doctors: doctors,
+          presetReasons: presetReasons,
         ),
       ),
     );
