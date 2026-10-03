@@ -15,6 +15,7 @@ import '../utils/app_toast.dart';
 import 'package:dairy_farm_app/features/milk_entry/presentation/widgets/conflict_resolution_dialog.dart';
 import '../../features/dashboard/presentation/pages/schedule_vet_check_screen.dart';
 import '../../features/milk_entry/presentation/pages/milk_history_screen.dart';
+import '../../features/milk_entry/presentation/pages/export_milk_history_screen.dart';
 
 // ---------------------------------------------------------------------------
 // AppRouter
@@ -337,6 +338,20 @@ abstract final class AppRouter {
           grossRevenue: grossRevenue,
           avgRevenuePerKg: avgRevenuePerKg,
           logs: const [], // Empty by default per requirements
+        ),
+      ),
+    );
+  }
+
+  /// Push the Export Milk History Screen.
+  static Future<void> pushExportMilkHistory(
+    BuildContext context, {
+    required String farmName,
+  }) {
+    return Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ExportMilkHistoryScreen(
+          farmName: farmName,
         ),
       ),
     );

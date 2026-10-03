@@ -962,6 +962,9 @@ class AppShellState extends State<AppShell> with WidgetsBindingObserver {
           if (action == MilkCardActionType.viewHistory) {
             AppRouter.pushMilkHistory(context, farmName: farmName);
             return;
+          } else if (action == MilkCardActionType.exportSummary) {
+            AppRouter.pushExportMilkHistory(context, farmName: farmName);
+            return;
           }
           final connector = context.read<MilkCardActionsConnector>();
           final result = await connector.executeAction(action);
