@@ -1,11 +1,8 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart' show Icons;
 
 import '../../data/models/cow_model.dart';
 import 'package:dairy_farm_app/features/cows/data/repositories/cow_repository.dart';
 import 'package:dairy_farm_app/features/dashboard/presentation/providers/activity_log_provider.dart';
-import 'package:intl/intl.dart';
-import '../../../../features/dashboard/data/models/activity_log_model.dart';
 
 /// Loading state for async cow operations.
 enum CowStatus { idle, loading, success, error }

@@ -14,6 +14,7 @@ import '../../features/dashboard/presentation/providers/activity_log_provider.da
 import '../utils/app_toast.dart';
 import 'package:dairy_farm_app/features/milk_entry/presentation/widgets/conflict_resolution_dialog.dart';
 import '../../features/dashboard/presentation/pages/schedule_vet_check_screen.dart';
+import '../../features/milk_entry/presentation/pages/milk_history_screen.dart';
 
 // ---------------------------------------------------------------------------
 // AppRouter
@@ -313,6 +314,29 @@ abstract final class AppRouter {
           shed: shed,
           doctors: doctors,
           presetReasons: presetReasons,
+        ),
+      ),
+    );
+  }
+
+  /// Push the Milk History Screen.
+  static Future<void> pushMilkHistory(
+    BuildContext context, {
+    required String farmName,
+    double totalQuantity = 0,
+    double avgQuantityPerDay = 0,
+    double grossRevenue = 0,
+    double avgRevenuePerKg = 0,
+  }) {
+    return Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => MilkHistoryScreen(
+          farmName: farmName,
+          totalQuantity: totalQuantity,
+          avgQuantityPerDay: avgQuantityPerDay,
+          grossRevenue: grossRevenue,
+          avgRevenuePerKg: avgRevenuePerKg,
+          logs: const [], // Empty by default per requirements
         ),
       ),
     );
