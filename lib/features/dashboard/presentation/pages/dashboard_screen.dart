@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dairy_farm_app/core/theme/app_icons.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/constants/app_strings.dart';
@@ -24,7 +25,7 @@ class RecentActivity {
   final String time;
 
   /// Icon shown in the leading circle avatar.
-  final IconData icon;
+  final dynamic icon;
 
   /// If true the value is styled in sage green (+), otherwise warning red (−).
   final bool isPositive;
@@ -743,11 +744,7 @@ class _CowsCard extends StatelessWidget {
           // Header Row
           Row(
             children: [
-              const Icon(
-                Icons.pets_outlined,
-                color: Color(0xFF2C694E),
-                size: 14,
-              ),
+              AppIcons.cowHoof(color: const Color(0xFF2C694E), size: 14),
               const SizedBox(width: 4),
               Expanded(
                 child: FittedBox(
@@ -1105,11 +1102,11 @@ class _ActivityTile extends StatelessWidget {
                   : const Color(0xFFEFEEEB),
               shape: BoxShape.circle,
             ),
-            child: Icon(
+            child: activity.icon is IconData ? Icon(
               activity.icon,
               color: const Color(0xFF1B4332),
               size: 20,
-            ),
+            ) : IconTheme(data: const IconThemeData(color: Color(0xFF1B4332), size: 20), child: activity.icon),
           ),
           const SizedBox(width: 14),
 
@@ -1280,8 +1277,8 @@ class _DashboardNavBar extends StatelessWidget {
                 onTap: () => onTap(2),
               ),
               _NavItem(
-                icon: Icons.pets_outlined,
-                activeIcon: Icons.pets_rounded,
+                icon: AppIcons.cowHoof(),
+                activeIcon: AppIcons.cowHoof(),
                 label: AppStrings.navHerd,
                 isActive: currentIndex == 3,
                 onTap: () => onTap(3),
@@ -1295,8 +1292,8 @@ class _DashboardNavBar extends StatelessWidget {
 }
 
 class _NavItem extends StatelessWidget {
-  final IconData icon;
-  final IconData activeIcon;
+  final dynamic icon;
+  final dynamic activeIcon;
   final String label;
   final bool isActive;
   final VoidCallback onTap;
@@ -1325,11 +1322,7 @@ class _NavItem extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              isActive ? activeIcon : icon,
-              color: isActive ? const Color(0xFF012D1D) : const Color(0xFF717973),
-              size: 20,
-            ),
+            isActive ? (activeIcon is IconData ? Icon(activeIcon, color: isActive ? const Color(0xFF012D1D) : const Color(0xFF717973), size: 20) : IconTheme(data: IconThemeData(color: isActive ? const Color(0xFF012D1D) : const Color(0xFF717973), size: 20), child: activeIcon)) : (icon is IconData ? Icon(icon, color: isActive ? const Color(0xFF012D1D) : const Color(0xFF717973), size: 20) : IconTheme(data: IconThemeData(color: isActive ? const Color(0xFF012D1D) : const Color(0xFF717973), size: 20), child: icon)),
             const SizedBox(height: 2),
             Text(
               label,

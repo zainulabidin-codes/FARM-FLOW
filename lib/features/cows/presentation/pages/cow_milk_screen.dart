@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dairy_farm_app/core/theme/app_icons.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
@@ -193,7 +194,7 @@ class _CowMilkScreenState extends State<CowMilkScreen> {
           CircleAvatar(
             radius: 24,
             backgroundColor: AppColors.sageTint,
-            child: const Icon(Icons.pets, color: AppColors.deepGreen),
+            child: AppIcons.cowHoof(color: AppColors.deepGreen),
           ),
           const SizedBox(width: 16),
           Flexible(

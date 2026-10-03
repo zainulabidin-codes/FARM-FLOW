@@ -1,3 +1,4 @@
+import '../../../../core/theme/app_icons.dart';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 
@@ -63,8 +64,8 @@ class ActivityLogModel {
     return null;
   }
 
-  IconData get icon {
-    if (iconCode == Icons.pets.codePoint) return Icons.pets;
+  dynamic get icon {
+    if (iconCode == Icons.pets.codePoint) return AppIcons.cowHoof();
     if (iconCode == Icons.favorite.codePoint) return Icons.favorite;
     if (iconCode == Icons.update.codePoint) return Icons.update;
     if (iconCode == Icons.child_care.codePoint) return Icons.child_care;

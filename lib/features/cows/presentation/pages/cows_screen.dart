@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dairy_farm_app/core/theme/app_icons.dart';
 import 'package:flutter/services.dart';
 
 import '../../../../core/theme/app_theme.dart';
@@ -265,7 +266,7 @@ class _CowsScreenState extends State<CowsScreen> {
 // _IconCircleButton — small grey or green circle icon button
 // ---------------------------------------------------------------------------
 class _IconCircleButton extends StatelessWidget {
-  final IconData icon;
+  final dynamic icon;
   final VoidCallback onTap;
   final bool filled;
 
@@ -1291,11 +1292,7 @@ class _EmptyState extends StatelessWidget {
                 color: AppColors.sageTint,
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
-                Icons.pets_rounded,
-                color: AppColors.deepGreen,
-                size: 38,
-              ),
+              child: AppIcons.cowHoof(color: AppColors.deepGreen, size: 38),
             ),
             const SizedBox(height: 20),
             Text(
@@ -1399,8 +1396,8 @@ class _CowsNavBar extends StatelessWidget {
                 onTap: () => onTap(2),
               ),
               _NavItem(
-                icon: Icons.pets_outlined,
-                activeIcon: Icons.pets_rounded,
+                icon: AppIcons.cowHoof(),
+                activeIcon: AppIcons.cowHoof(),
                 label: AppStrings.navHerd,
                 isActive: currentIndex == 3,
                 onTap: () => onTap(3),
@@ -1414,8 +1411,8 @@ class _CowsNavBar extends StatelessWidget {
 }
 
 class _NavItem extends StatelessWidget {
-  final IconData icon;
-  final IconData activeIcon;
+  final dynamic icon;
+  final dynamic activeIcon;
   final String label;
   final bool isActive;
   final VoidCallback onTap;
@@ -1444,11 +1441,7 @@ class _NavItem extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              isActive ? activeIcon : icon,
-              color: isActive ? AppColors.deepGreen : AppColors.textGrey,
-              size: 24,
-            ),
+            isActive ? (activeIcon is IconData ? Icon(activeIcon, color: isActive ? AppColors.deepGreen : AppColors.textGrey, size: 24) : IconTheme(data: IconThemeData(color: isActive ? AppColors.deepGreen : AppColors.textGrey, size: 24), child: activeIcon)) : (icon is IconData ? Icon(icon, color: isActive ? AppColors.deepGreen : AppColors.textGrey, size: 24) : IconTheme(data: IconThemeData(color: isActive ? AppColors.deepGreen : AppColors.textGrey, size: 24), child: icon)),
             const SizedBox(height: 3),
             Text(
               label,

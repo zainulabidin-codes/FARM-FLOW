@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dairy_farm_app/core/theme/app_icons.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_native_contact_picker/flutter_native_contact_picker.dart';
 import 'package:flutter_native_contact_picker/model/contact.dart';
@@ -195,11 +196,7 @@ class AppShellState extends State<AppShell> with WidgetsBindingObserver {
         backgroundColor: AppColors.cardWhite,
         title: Row(
           children: [
-            const Icon(
-              Icons.pets_rounded,
-              color: AppColors.deepGreen,
-              size: 28,
-            ),
+            AppIcons.cowHoof(color: AppColors.deepGreen, size: 28),
             const SizedBox(width: 10),
             Expanded(
               child: Text(
@@ -1449,9 +1446,9 @@ class _AddCowSheetState extends State<_AddCowSheet> {
               // Name field
               TextFormField(
                 controller: _nameController,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Name (optional)',
-                  prefixIcon: Icon(Icons.pets_rounded, size: 20),
+                  prefixIcon: AppIcons.cowHoof(size: 20),
                 ),
                 textCapitalization: TextCapitalization.words,
               ),

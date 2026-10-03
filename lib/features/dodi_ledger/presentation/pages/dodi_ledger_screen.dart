@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dairy_farm_app/core/theme/app_icons.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
@@ -150,7 +151,7 @@ class _DodiLedgerScreenState extends State<DodiLedgerScreen> {
 
 class _TabPill extends StatelessWidget {
   final String label;
-  final IconData icon;
+  final dynamic icon;
   final bool isSelected;
   final VoidCallback onTap;
 
@@ -610,8 +611,8 @@ class _LedgerNavBar extends StatelessWidget {
                 onTap: () => onTap(2),
               ),
               _NavItem(
-                icon: Icons.pets_outlined,
-                activeIcon: Icons.pets_rounded,
+                icon: AppIcons.cowHoof(),
+                activeIcon: AppIcons.cowHoof(),
                 label: AppStrings.navHerd,
                 isActive: currentIndex == 3,
                 onTap: () => onTap(3),
@@ -625,8 +626,8 @@ class _LedgerNavBar extends StatelessWidget {
 }
 
 class _NavItem extends StatelessWidget {
-  final IconData icon;
-  final IconData activeIcon;
+  final dynamic icon;
+  final dynamic activeIcon;
   final String label;
   final bool isActive;
   final VoidCallback onTap;
@@ -655,11 +656,7 @@ class _NavItem extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              isActive ? activeIcon : icon,
-              color: isActive ? AppColors.deepGreen : AppColors.textGrey,
-              size: 24,
-            ),
+            isActive ? (activeIcon is IconData ? Icon(activeIcon, color: isActive ? AppColors.deepGreen : AppColors.textGrey, size: 24) : IconTheme(data: IconThemeData(color: isActive ? AppColors.deepGreen : AppColors.textGrey, size: 24), child: activeIcon)) : (icon is IconData ? Icon(icon, color: isActive ? AppColors.deepGreen : AppColors.textGrey, size: 24) : IconTheme(data: IconThemeData(color: isActive ? AppColors.deepGreen : AppColors.textGrey, size: 24), child: icon)),
             const SizedBox(height: 3),
             Text(
               label,

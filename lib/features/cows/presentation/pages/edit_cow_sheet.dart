@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dairy_farm_app/core/theme/app_icons.dart';
 import 'package:provider/provider.dart';
 
 import '../../../../core/theme/app_theme.dart';
@@ -178,9 +179,9 @@ class _EditCowSheetState extends State<EditCowSheet> {
             // Name field
             TextFormField(
               controller: _nameController,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Name (optional)',
-                prefixIcon: Icon(Icons.pets_rounded, size: 20),
+                prefixIcon: AppIcons.cowHoof(size: 20),
               ),
               textCapitalization: TextCapitalization.words,
             ),
