@@ -957,10 +957,10 @@ class AppShellState extends State<AppShell> with WidgetsBindingObserver {
         ),
         onMilkCardAction: (action) async {
           if (action == MilkCardActionType.viewHistory) {
-            AppRouter.pushMilkHistory(context, farmName: farmName);
+            AppRouter.pushMilkHistory(context, farmName: farmName, userId: widget.userId);
             return;
           } else if (action == MilkCardActionType.exportSummary) {
-            AppRouter.pushExportMilkHistory(context, farmName: farmName);
+            AppRouter.pushExportMilkHistory(context, farmName: farmName, userId: widget.userId);
             return;
           }
           final connector = context.read<MilkCardActionsConnector>();
@@ -1877,8 +1877,9 @@ class _AddCowSheetState extends State<_AddCowSheet> {
                                   )
                                   .toList(),
                               onChanged: (val) {
-                                if (val != null)
+                                if (val != null) {
                                   setState(() => _gestationMonth = val);
+                                }
                               },
                             ),
                           ],
@@ -1903,8 +1904,9 @@ class _AddCowSheetState extends State<_AddCowSheet> {
                                   )
                                   .toList(),
                               onChanged: (val) {
-                                if (val != null)
+                                if (val != null) {
                                   setState(() => _gestationDay = val);
+                                }
                               },
                             ),
                           ],

@@ -324,6 +324,7 @@ abstract final class AppRouter {
   static Future<void> pushMilkHistory(
     BuildContext context, {
     required String farmName,
+    int? userId,
     double totalQuantity = 0,
     double avgQuantityPerDay = 0,
     double grossRevenue = 0,
@@ -333,11 +334,11 @@ abstract final class AppRouter {
       MaterialPageRoute(
         builder: (_) => MilkHistoryScreen(
           farmName: farmName,
+          userId: userId ?? Provider.of<AuthProvider>(context, listen: false).currentUser?.id,
           totalQuantity: totalQuantity,
           avgQuantityPerDay: avgQuantityPerDay,
           grossRevenue: grossRevenue,
           avgRevenuePerKg: avgRevenuePerKg,
-          logs: const [], // Empty by default per requirements
         ),
       ),
     );
@@ -347,11 +348,13 @@ abstract final class AppRouter {
   static Future<void> pushExportMilkHistory(
     BuildContext context, {
     required String farmName,
+    int? userId,
   }) {
     return Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => ExportMilkHistoryScreen(
           farmName: farmName,
+          userId: userId ?? Provider.of<AuthProvider>(context, listen: false).currentUser?.id,
         ),
       ),
     );

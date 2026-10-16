@@ -213,7 +213,7 @@ class CowProvider extends ChangeNotifier {
       if (cow.isDeleted == 0 && cow.status == 'PENDING_CONFIRMATION') {
         final days = getDaysSinceMating(cow);
         if (days != null && days >= 29) {
-          final result = await _repository.confirmPregnancy(
+          await _repository.confirmPregnancy(
             cowId: cow.id!,
             confirmationDate: todayStr,
             method: 'AUTO',
@@ -498,9 +498,6 @@ class CowProvider extends ChangeNotifier {
         confirmationMethod: null,
       );
 
-      final subtitleStr = (resetStatus == 'MILKING')
-          ? '$label — Mid-term loss logged (Reverted to Milking)'
-          : '$label — Mid-term loss logged (Reverted to Heifer)';
 
       if (_activityLogProvider != null) {
   await _activityLogProvider!.logPregnancyEnded(userId: userId, label: label, resetStatus: resetStatus, name: cow?.name, tagNumber: cow?.tagNumber);

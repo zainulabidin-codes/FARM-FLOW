@@ -63,6 +63,19 @@ class DatabaseHelper {
     return db;
   }
 
+  /// Creates an isolated in-memory SQLite database pre-configured with full schema,
+  /// ideal for unit and integration testing without disk I/O lock contention.
+  static Future<Database> createInMemoryDatabase() async {
+    final helper = DatabaseHelper.instance;
+    final db = await openDatabase(
+      inMemoryDatabasePath,
+      version: _databaseVersion,
+      onCreate: helper._onCreate,
+    );
+    await helper._ensureDefensiveColumns(db);
+    return db;
+  }
+
   /// Guarantees critical columns exist regardless of upgrade path history.
   Future<void> _ensureDefensiveColumns(Database db) async {
     try {

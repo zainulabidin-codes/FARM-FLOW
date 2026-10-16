@@ -465,11 +465,13 @@ void main() {
 
       await provider.fetchCows(userId);
       final initialPending = provider.pendingConfirmationCount;
+      final recentMating = DateTime.now().subtract(const Duration(days: 10));
+      final recentMatingStr = "${recentMating.year.toString().padLeft(4, '0')}-${recentMating.month.toString().padLeft(2, '0')}-${recentMating.day.toString().padLeft(2, '0')}";
 
       await provider.recordMating(
         cowId: cow.id!,
         cowName: cow.name!,
-        matingDate: '2026-08-20',
+        matingDate: recentMatingStr,
         userId: userId,
       );
 
@@ -493,11 +495,13 @@ void main() {
 
       await provider.fetchCows(userId);
       final initialPregnant = provider.pregnantCount;
+      final recentMating = DateTime.now().subtract(const Duration(days: 10));
+      final recentMatingStr = "${recentMating.year.toString().padLeft(4, '0')}-${recentMating.month.toString().padLeft(2, '0')}-${recentMating.day.toString().padLeft(2, '0')}";
 
       await provider.recordMating(
         cowId: cow.id!,
         cowName: cow.name!,
-        matingDate: '2026-08-20',
+        matingDate: recentMatingStr,
         userId: userId,
       );
 
@@ -532,8 +536,10 @@ void main() {
       );
 
       await provider.fetchCows(userId);
-      await provider.recordMating(cowId: lactatedCow.id!, cowName: lactatedCow.name!, matingDate: '2026-08-20', userId: userId);
-      await provider.recordMating(cowId: heiferCow.id!, cowName: heiferCow.name!, matingDate: '2026-08-20', userId: userId);
+      final recentMating = DateTime.now().subtract(const Duration(days: 10));
+      final recentMatingStr = "${recentMating.year.toString().padLeft(4, '0')}-${recentMating.month.toString().padLeft(2, '0')}-${recentMating.day.toString().padLeft(2, '0')}";
+      await provider.recordMating(cowId: lactatedCow.id!, cowName: lactatedCow.name!, matingDate: recentMatingStr, userId: userId);
+      await provider.recordMating(cowId: heiferCow.id!, cowName: heiferCow.name!, matingDate: recentMatingStr, userId: userId);
 
       expect(provider.milkingCows.any((c) => c.id == lactatedCow.id), isTrue, reason: 'Lactating cow in PENDING_CONFIRMATION must be in milkingCows');
       expect(provider.milkingCows.any((c) => c.id == heiferCow.id), isFalse, reason: 'Non-lactated heifer in PENDING_CONFIRMATION must NOT be in milkingCows');

@@ -47,6 +47,9 @@ dependencies:
   http: ^1.6.0
   flutter_native_contact_picker: ^0.0.8
   google_fonts: ^6.2.1
+  pdf: 3.11.1
+  excel: 4.0.6
+  share_plus: ^13.3.1
 
 dev_dependencies:
   flutter_test:
