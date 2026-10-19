@@ -213,15 +213,19 @@ class _ExportMilkHistoryScreenState extends State<ExportMilkHistoryScreen> {
         logs: _logs,
       );
     } else {
-      // High-resolution image capture via RenderRepaintBoundary (3.0x pixel ratio)
-      final boundary = _repaintBoundaryKey.currentContext?.findRenderObject()
-          as RenderRepaintBoundary?;
-      if (boundary != null && !boundary.debugNeedsPaint) {
-        try {
+      // High-resolution image capture with graceful fallback to Canvas generator
+      try {
+        final boundary = _repaintBoundaryKey.currentContext?.findRenderObject()
+            as RenderRepaintBoundary?;
+        if (boundary != null &&
+            boundary.attached &&
+            boundary.hasSize &&
+            !boundary.size.isEmpty &&
+            !boundary.debugNeedsPaint) {
           return await _exportService.captureBoundaryImage(boundary, pixelRatio: 3.0);
-        } catch (_) {
-          // Fall through to canvas generator fallback
         }
+      } catch (_) {
+        // Fall through to canvas generator fallback
       }
       return await _exportService.generateImageReport(
         farmName: widget.farmName,
@@ -245,14 +249,25 @@ class _ExportMilkHistoryScreenState extends State<ExportMilkHistoryScreen> {
     }
   }
 
-  String _buildFileName() {
+  String _buildDefaultBaseFileName() {
     final startStr = DateFormat('yyyyMMdd').format(_startDate);
     final endStr = DateFormat('yyyyMMdd').format(_endDate);
-    final ext = _getFileExtension();
-    return 'milk_history_${startStr}_$endStr.$ext';
+    return 'milk_history_${startStr}_$endStr';
   }
 
-  Future<void> _handleShare() async {
+  String _resolveFileName(String? customName) {
+    final ext = _getFileExtension();
+    if (customName == null || customName.trim().isEmpty) {
+      return '${_buildDefaultBaseFileName()}.$ext';
+    }
+    var sanitized = customName.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_').trim();
+    if (sanitized.toLowerCase().endsWith('.$ext')) {
+      return sanitized;
+    }
+    return '$sanitized.$ext';
+  }
+
+  Future<void> _handleShare({String? customFileName}) async {
     if (_logs.isEmpty) {
       AppToast.showInfo(context, 'No milk records found for the selected date range.');
       return;
@@ -264,7 +279,7 @@ class _ExportMilkHistoryScreenState extends State<ExportMilkHistoryScreen> {
     setState(() => _isExporting = true);
     try {
       final bytes = await _generateExportBytes();
-      final fileName = _buildFileName();
+      final fileName = _resolveFileName(customFileName);
       final subject = '${widget.farmName} Milk History (${dateFormat.format(_startDate)} - ${dateFormat.format(_endDate)})';
       await _exportService.shareFile(
         fileName: fileName,
@@ -283,7 +298,7 @@ class _ExportMilkHistoryScreenState extends State<ExportMilkHistoryScreen> {
     }
   }
 
-  Future<void> _handleDownload() async {
+  Future<void> _handleDownload({String? customFileName}) async {
     if (_logs.isEmpty) {
       AppToast.showInfo(context, 'No milk records found for the selected date range.');
       return;
@@ -292,7 +307,7 @@ class _ExportMilkHistoryScreenState extends State<ExportMilkHistoryScreen> {
     setState(() => _isExporting = true);
     try {
       final bytes = await _generateExportBytes();
-      final fileName = _buildFileName();
+      final fileName = _resolveFileName(customFileName);
       final File savedFile = await _exportService.saveFile(fileName: fileName, bytes: bytes);
       if (mounted) {
         final displayName = savedFile.path.split(Platform.pathSeparator).last;
@@ -307,6 +322,189 @@ class _ExportMilkHistoryScreenState extends State<ExportMilkHistoryScreen> {
         setState(() => _isExporting = false);
       }
     }
+  }
+
+  Future<void> _openFileNameDialog() async {
+    if (_logs.isEmpty) {
+      AppToast.showInfo(context, 'No milk records found for the selected date range.');
+      return;
+    }
+
+    final ext = _getFileExtension();
+    final defaultBaseName = _buildDefaultBaseFileName();
+    final controller = TextEditingController(text: defaultBaseName);
+
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      builder: (dialogContext) {
+        return Dialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: const BoxDecoration(
+                        color: AppColors.mintCardBg,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.description_outlined,
+                        color: AppColors.deepGreen,
+                        size: 22,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Export File Name',
+                            style: TextStyle(
+                              fontFamily: 'Plus Jakarta Sans',
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.darkForest,
+                            ),
+                          ),
+                          Text(
+                            'Format: ${_selectedFormat.toUpperCase()} (.$ext)',
+                            style: const TextStyle(
+                              fontFamily: 'Plus Jakarta Sans',
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: AppColors.textGrey,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close, size: 20, color: AppColors.textGrey),
+                      onPressed: () => Navigator.of(dialogContext).pop(),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 18),
+                const Text(
+                  'Customize the file name or save with the proposed name:',
+                  style: TextStyle(
+                    fontFamily: 'Plus Jakarta Sans',
+                    fontSize: 12,
+                    color: AppColors.textDark,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: controller,
+                  autofocus: false,
+                  style: const TextStyle(
+                    fontFamily: 'Plus Jakarta Sans',
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textDark,
+                  ),
+                  decoration: InputDecoration(
+                    filled: true,
+                    fillColor: AppColors.backspaceBg,
+                    labelText: 'File Name',
+                    labelStyle: const TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 12,
+                      color: AppColors.textGrey,
+                    ),
+                    suffixText: '.$ext',
+                    suffixStyle: const TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.deepGreen,
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: AppColors.deepGreen, width: 1.5),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          final chosen = controller.text;
+                          Navigator.of(dialogContext).pop();
+                          _handleShare(customFileName: chosen);
+                        },
+                        icon: const Icon(Icons.share_outlined, size: 16),
+                        label: const Text('Share'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.darkForest,
+                          side: const BorderSide(color: AppColors.darkForest),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                          textStyle: const TextStyle(
+                            fontFamily: 'Plus Jakarta Sans',
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          final chosen = controller.text;
+                          Navigator.of(dialogContext).pop();
+                          _handleDownload(customFileName: chosen);
+                        },
+                        icon: const Icon(Icons.download_outlined, size: 16),
+                        label: const Text('Save Report'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.darkForest,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                          textStyle: const TextStyle(
+                            fontFamily: 'Plus Jakarta Sans',
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -515,43 +713,99 @@ class _ExportMilkHistoryScreenState extends State<ExportMilkHistoryScreen> {
                                     ],
                                   ),
                                   const SizedBox(height: 16),
-                                  const Text(
-                                    'Total Milk Produced / Dispatched',
-                                    style: TextStyle(
-                                      fontFamily: 'Plus Jakarta Sans',
-                                      fontSize: 12,
-                                      color: Colors.white70,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  FittedBox(
-                                    fit: BoxFit.scaleDown,
-                                    alignment: Alignment.centerLeft,
-                                    child: Row(
-                                      crossAxisAlignment: CrossAxisAlignment.baseline,
-                                      textBaseline: TextBaseline.alphabetic,
-                                      children: [
-                                        Text(
-                                          numberFormat.format(_summary.totalQuantity),
-                                          style: const TextStyle(
-                                            fontFamily: 'Plus Jakarta Sans',
-                                            fontSize: 32,
-                                            fontWeight: FontWeight.w800,
-                                            color: Colors.white,
-                                          ),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                    children: [
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            const Text(
+                                              'Total Milk Produced',
+                                              style: TextStyle(
+                                                fontFamily: 'Plus Jakarta Sans',
+                                                fontSize: 12,
+                                                color: Colors.white70,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 4),
+                                            FittedBox(
+                                              fit: BoxFit.scaleDown,
+                                              alignment: Alignment.centerLeft,
+                                              child: Row(
+                                                crossAxisAlignment: CrossAxisAlignment.baseline,
+                                                textBaseline: TextBaseline.alphabetic,
+                                                children: [
+                                                  Text(
+                                                    numberFormat.format(_summary.totalQuantity),
+                                                    style: const TextStyle(
+                                                      fontFamily: 'Plus Jakarta Sans',
+                                                      fontSize: 30,
+                                                      fontWeight: FontWeight.w800,
+                                                      color: Colors.white,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 4),
+                                                  const Text(
+                                                    'Kg',
+                                                    style: TextStyle(
+                                                      fontFamily: 'Plus Jakarta Sans',
+                                                      fontSize: 15,
+                                                      fontWeight: FontWeight.w600,
+                                                      color: AppColors.sageGreen,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ],
                                         ),
-                                        const SizedBox(width: 6),
-                                        const Text(
-                                          'Kg',
-                                          style: TextStyle(
-                                            fontFamily: 'Plus Jakarta Sans',
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w600,
-                                            color: AppColors.sageGreen,
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Column(
+                                        crossAxisAlignment: CrossAxisAlignment.end,
+                                        children: [
+                                          const Text(
+                                            'Gross Earnings',
+                                            style: TextStyle(
+                                              fontFamily: 'Plus Jakarta Sans',
+                                              fontSize: 12,
+                                              color: Colors.white70,
+                                            ),
                                           ),
-                                        ),
-                                      ],
-                                    ),
+                                          const SizedBox(height: 4),
+                                          FittedBox(
+                                            fit: BoxFit.scaleDown,
+                                            alignment: Alignment.centerRight,
+                                            child: Row(
+                                              crossAxisAlignment: CrossAxisAlignment.baseline,
+                                              textBaseline: TextBaseline.alphabetic,
+                                              children: [
+                                                const Text(
+                                                  'PKR ',
+                                                  style: TextStyle(
+                                                    fontFamily: 'Plus Jakarta Sans',
+                                                    fontSize: 14,
+                                                    fontWeight: FontWeight.w700,
+                                                    color: AppColors.sageGreen,
+                                                  ),
+                                                ),
+                                                Text(
+                                                  numberFormat.format(_summary.grossRevenue),
+                                                  style: const TextStyle(
+                                                    fontFamily: 'Plus Jakarta Sans',
+                                                    fontSize: 24,
+                                                    fontWeight: FontWeight.w800,
+                                                    color: Colors.white,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
                                   ),
                                   const SizedBox(height: 16),
                                   Row(
@@ -814,73 +1068,38 @@ class _ExportMilkHistoryScreenState extends State<ExportMilkHistoryScreen> {
                 color: Colors.white,
                 boxShadow: AppTheme.softShadow,
               ),
-              child: Row(
-                children: [
-                  Expanded(
-                    flex: 1,
-                    child: ElevatedButton.icon(
-                      onPressed: (!hasData || _isExporting) ? null : _handleShare,
-                      icon: _isExporting
-                          ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Icon(Icons.share_outlined, size: 18),
-                      label: const Text('Share'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.backspaceBg,
-                        foregroundColor: AppColors.textDark,
-                        disabledBackgroundColor: Colors.grey.shade200,
-                        disabledForegroundColor: Colors.grey.shade400,
-                        elevation: 0,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        textStyle: const TextStyle(
-                          fontFamily: 'Plus Jakarta Sans',
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(24),
-                        ),
-                      ),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: (!hasData || _isExporting) ? null : _openFileNameDialog,
+                  icon: _isExporting
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Icon(Icons.file_download_outlined, size: 20),
+                  label: const Text('Generate File'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.darkForest,
+                    foregroundColor: Colors.white,
+                    disabledBackgroundColor: Colors.grey.shade300,
+                    disabledForegroundColor: Colors.grey.shade500,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    textStyle: const TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(24),
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    flex: 2,
-                    child: ElevatedButton.icon(
-                      onPressed: (!hasData || _isExporting) ? null : _handleDownload,
-                      icon: _isExporting
-                          ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : const Icon(Icons.download_outlined, size: 18),
-                      label: const Text('Download Report'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.darkForest,
-                        foregroundColor: Colors.white,
-                        disabledBackgroundColor: Colors.grey.shade300,
-                        disabledForegroundColor: Colors.grey.shade500,
-                        elevation: 0,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        textStyle: const TextStyle(
-                          fontFamily: 'Plus Jakarta Sans',
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(24),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
           ],
@@ -935,7 +1154,7 @@ class _ExportMilkHistoryScreenState extends State<ExportMilkHistoryScreen> {
           Expanded(
             flex: 2,
             child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 10),
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 2),
               decoration: BoxDecoration(
                 color: AppColors.mintCardBg,
                 borderRadius: BorderRadius.circular(12),
@@ -953,6 +1172,14 @@ class _ExportMilkHistoryScreenState extends State<ExportMilkHistoryScreen> {
                       style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 13, fontWeight: FontWeight.w800, color: AppColors.darkForest),
                     ),
                   ),
+                  if (log.amount > 0)
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        'PKR ${numberFormat.format(log.amount)}',
+                        style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 8, fontWeight: FontWeight.w700, color: AppColors.deepGreen),
+                      ),
+                    ),
                 ],
               ),
             ),

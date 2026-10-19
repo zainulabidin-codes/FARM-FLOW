@@ -196,7 +196,8 @@ class MilkHistoryLocalDatasource {
       'SELECT '
       '  COALESCE(SUM(l.quantity_grams), 0) AS total_quantity_grams, '
       "  COALESCE(SUM(CASE WHEN UPPER(l.session) = 'MORNING' THEN l.quantity_grams ELSE 0 END), 0) AS morning_quantity_grams, "
-      "  COALESCE(SUM(CASE WHEN UPPER(l.session) = 'EVENING' THEN l.quantity_grams ELSE 0 END), 0) AS evening_quantity_grams "
+      "  COALESCE(SUM(CASE WHEN UPPER(l.session) = 'EVENING' THEN l.quantity_grams ELSE 0 END), 0) AS evening_quantity_grams, "
+      '  COALESCE(SUM(l.amount_paise), 0) AS gross_revenue_paise '
       'FROM ledger l '
       'JOIN dodis d ON l.dodi_id = d.id '
       "WHERE d.user_id = ? AND l.type = 'MILK_SOLD' "
@@ -207,22 +208,26 @@ class MilkHistoryLocalDatasource {
     int totalGrams = 0;
     int morningGrams = 0;
     int eveningGrams = 0;
+    int grossPaise = 0;
     if (summaryRows.isNotEmpty) {
       totalGrams = (summaryRows.first['total_quantity_grams'] as num?)?.toInt() ?? 0;
       morningGrams = (summaryRows.first['morning_quantity_grams'] as num?)?.toInt() ?? 0;
       eveningGrams = (summaryRows.first['evening_quantity_grams'] as num?)?.toInt() ?? 0;
+      grossPaise = (summaryRows.first['gross_revenue_paise'] as num?)?.toInt() ?? 0;
     }
 
     final double totalQty = totalGrams / 1000.0;
     final double morningQty = morningGrams / 1000.0;
     final double eveningQty = eveningGrams / 1000.0;
     final double dailyAvg = daysSpan > 0 ? totalQty / daysSpan : 0.0;
+    final double grossRevenue = grossPaise / 100.0;
 
     final summary = ExportMilkSummary(
       totalQuantity: totalQty,
       morningQuantity: morningQty,
       eveningQuantity: eveningQty,
       dailyAvg: dailyAvg,
+      grossRevenue: grossRevenue,
     );
 
     // Daily breakdown query
@@ -231,7 +236,8 @@ class MilkHistoryLocalDatasource {
       '  SUBSTR(l.date, 1, 10) AS date, '
       "  COALESCE(SUM(CASE WHEN UPPER(l.session) = 'MORNING' THEN l.quantity_grams ELSE 0 END), 0) AS morning_grams, "
       "  COALESCE(SUM(CASE WHEN UPPER(l.session) = 'EVENING' THEN l.quantity_grams ELSE 0 END), 0) AS evening_grams, "
-      '  COALESCE(SUM(l.quantity_grams), 0) AS total_grams '
+      '  COALESCE(SUM(l.quantity_grams), 0) AS total_grams, '
+      '  COALESCE(SUM(l.amount_paise), 0) AS total_amount_paise '
       'FROM ledger l '
       'JOIN dodis d ON l.dodi_id = d.id '
       "WHERE d.user_id = ? AND l.type = 'MILK_SOLD' "
@@ -245,6 +251,7 @@ class MilkHistoryLocalDatasource {
       final int rowTotalGrams = (row['total_grams'] as num?)?.toInt() ?? 0;
       final int rowMorningGrams = (row['morning_grams'] as num?)?.toInt() ?? 0;
       final int rowEveningGrams = (row['evening_grams'] as num?)?.toInt() ?? 0;
+      final int rowAmountPaise = (row['total_amount_paise'] as num?)?.toInt() ?? 0;
 
       final dateStr = (row['date'] as String?) ?? '';
       final parsedDate = DateTime.tryParse(dateStr) ?? DateTime.now();
@@ -254,6 +261,7 @@ class MilkHistoryLocalDatasource {
         totalQty: rowTotalGrams / 1000.0,
         morningQty: rowMorningGrams / 1000.0,
         eveningQty: rowEveningGrams / 1000.0,
+        amount: rowAmountPaise / 100.0,
       );
     }).toList();
 

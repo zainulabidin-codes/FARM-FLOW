@@ -87,12 +87,14 @@ class ExportMilkSummary {
   final double morningQuantity;
   final double eveningQuantity;
   final double dailyAvg;
+  final double grossRevenue;
 
   const ExportMilkSummary({
     this.totalQuantity = 0.0,
     this.morningQuantity = 0.0,
     this.eveningQuantity = 0.0,
     this.dailyAvg = 0.0,
+    this.grossRevenue = 0.0,
   });
 
   static const ExportMilkSummary empty = ExportMilkSummary();
@@ -105,12 +107,14 @@ class ExportMilkLog {
   final double totalQty;
   final double morningQty;
   final double eveningQty;
+  final double amount;
 
   const ExportMilkLog({
     required this.date,
     required this.totalQty,
     required this.morningQty,
     required this.eveningQty,
+    this.amount = 0.0,
   });
 
   @override
@@ -121,8 +125,10 @@ class ExportMilkLog {
           date == other.date &&
           totalQty == other.totalQty &&
           morningQty == other.morningQty &&
-          eveningQty == other.eveningQty;
+          eveningQty == other.eveningQty &&
+          amount == other.amount;
 
   @override
-  int get hashCode => Object.hash(date, totalQty, morningQty, eveningQty);
+  int get hashCode => Object.hash(date, totalQty, morningQty, eveningQty, amount);
 }
+

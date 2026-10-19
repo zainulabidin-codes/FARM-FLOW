@@ -110,6 +110,7 @@ class FakeMilkExportService extends MilkExportService {
     required String fileName,
     required List<int> bytes,
     required String subject,
+    String? mimeType,
     Rect? sharePositionOrigin,
   }) async {
     shareCalled = true;
@@ -144,17 +145,11 @@ void main() {
       // Validation notice card is shown
       expect(find.text('No records match this date range'), findsOneWidget);
 
-      // Share button is disabled
-      final shareButton = tester.widget<ElevatedButton>(
-        find.widgetWithText(ElevatedButton, 'Share'),
+      // Generate File button is disabled
+      final generateButton = tester.widget<ElevatedButton>(
+        find.widgetWithText(ElevatedButton, 'Generate File'),
       );
-      expect(shareButton.onPressed, isNull);
-
-      // Download Report button is disabled
-      final downloadButton = tester.widget<ElevatedButton>(
-        find.widgetWithText(ElevatedButton, 'Download Report'),
-      );
-      expect(downloadButton.onPressed, isNull);
+      expect(generateButton.onPressed, isNull);
     });
 
     testWidgets('Export triggers are enabled and logs rendered when records exist', (tester) async {
@@ -168,12 +163,14 @@ void main() {
           totalQty: 50.0,
           morningQty: 30.0,
           eveningQty: 20.0,
+          amount: 5000.0,
         ),
         ExportMilkLog(
           date: DateTime(2026, 10, 2),
           totalQty: 55.0,
           morningQty: 32.0,
           eveningQty: 23.0,
+          amount: 5500.0,
         ),
       ];
       const summary = ExportMilkSummary(
@@ -181,6 +178,7 @@ void main() {
         morningQuantity: 62.0,
         eveningQuantity: 43.0,
         dailyAvg: 52.5,
+        grossRevenue: 10500.0,
       );
 
       final fakeRepo = FakeExportRepository(
@@ -205,25 +203,22 @@ void main() {
       // Validation notice is NOT shown
       expect(find.text('No records match this date range'), findsNothing);
 
-      // Summary quantities rendered
+      // Summary quantities & PKR gross earnings rendered
       expect(find.text('105.0'), findsOneWidget);
       expect(find.text('62.0'), findsOneWidget);
       expect(find.text('43.0'), findsOneWidget);
+      expect(find.text('Gross Earnings'), findsOneWidget);
+      expect(find.text('PKR '), findsOneWidget);
+      expect(find.text('10,500.0'), findsOneWidget);
 
       // Logs header count rendered
       expect(find.text('2 Logs'), findsOneWidget);
 
-      // Share button is enabled
-      final shareButton = tester.widget<ElevatedButton>(
-        find.widgetWithText(ElevatedButton, 'Share'),
+      // Single Generate File button is enabled
+      final generateButton = tester.widget<ElevatedButton>(
+        find.widgetWithText(ElevatedButton, 'Generate File'),
       );
-      expect(shareButton.onPressed, isNotNull);
-
-      // Download Report button is enabled
-      final downloadButton = tester.widget<ElevatedButton>(
-        find.widgetWithText(ElevatedButton, 'Download Report'),
-      );
-      expect(downloadButton.onPressed, isNotNull);
+      expect(generateButton.onPressed, isNotNull);
 
       // Test format selector dropdown works
       expect(find.text('Pdf'), findsOneWidget);
@@ -237,38 +232,60 @@ void main() {
 
       expect(find.text('Excel'), findsOneWidget);
 
-      // Verify tapping Download Report executes Excel export
-      await tester.tap(find.widgetWithText(ElevatedButton, 'Download Report'));
+      // Tap Generate File -> opens centered modal dialog
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Generate File'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Export File Name'), findsOneWidget);
+      expect(find.text('Save Report'), findsOneWidget);
+      expect(find.text('Share'), findsOneWidget);
+
+      // Tap Save Report inside modal dialog
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Save Report'));
       await tester.pumpAndSettle();
 
       expect(fakeExportService.excelCalled, isTrue);
       expect(fakeExportService.saveCalled, isTrue);
       expect(fakeExportService.lastSavedFileName, endsWith('.xlsx'));
 
-      // Dismiss success SnackBar so it does not occlude bottom buttons
+      // Dismiss any toasts/snackbars
       ScaffoldMessenger.of(tester.element(find.byType(ExportMilkHistoryScreen))).clearSnackBars();
       await tester.pumpAndSettle();
 
-      // Switch to Pdf and verify Share button
+      // Switch to Pdf
       await tester.tap(find.text('Excel'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Pdf').last);
       await tester.pumpAndSettle();
 
-      await tester.tap(find.widgetWithText(ElevatedButton, 'Share'));
+      // Tap Generate File -> dialog opens
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Generate File'));
+      await tester.pumpAndSettle();
+
+      // Custom file name editing test
+      await tester.enterText(find.byType(TextField), 'custom_milk_october');
+      await tester.pumpAndSettle();
+
+      // Tap Share inside modal dialog
+      await tester.tap(find.widgetWithText(OutlinedButton, 'Share'));
       await tester.pumpAndSettle();
 
       expect(fakeExportService.pdfCalled, isTrue);
       expect(fakeExportService.shareCalled, isTrue);
-      expect(fakeExportService.lastSharedFileName, endsWith('.pdf'));
+      expect(fakeExportService.lastSharedFileName, equals('custom_milk_october.pdf'));
 
-      // Switch to Image and verify image generation fallback
+      // Switch to Image
       await tester.tap(find.text('Pdf'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Image').last);
       await tester.pumpAndSettle();
 
-      await tester.tap(find.widgetWithText(ElevatedButton, 'Download Report'));
+      // Tap Generate File -> dialog opens
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Generate File'));
+      await tester.pumpAndSettle();
+
+      // Tap Save Report inside dialog
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Save Report'));
       await tester.pumpAndSettle();
 
       expect(fakeExportService.imageCalled, isTrue);

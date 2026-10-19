@@ -136,6 +136,10 @@ class MilkExportService {
                   '${_numberFormat.format(summary.totalQuantity)} Kg',
                 ),
                 _buildPdfSummaryItem(
+                  'Gross Earnings',
+                  'PKR ${_numberFormat.format(summary.grossRevenue)}',
+                ),
+                _buildPdfSummaryItem(
                   'Morning Qty',
                   '${_numberFormat.format(summary.morningQuantity)} Kg',
                 ),
@@ -180,12 +184,13 @@ class MilkExportService {
             ),
             cellHeight: 24,
             cellStyle: const pw.TextStyle(fontSize: 9),
-            headers: const ['Date', 'Morning (Kg)', 'Evening (Kg)', 'Total (Kg)'],
+            headers: const ['Date', 'Morning (Kg)', 'Evening (Kg)', 'Total (Kg)', 'Amount (PKR)'],
             data: logs.map((log) => [
               _dateFormat.format(log.date),
               _numberFormat.format(log.morningQty),
               _numberFormat.format(log.eveningQty),
               _numberFormat.format(log.totalQty),
+              'PKR ${_numberFormat.format(log.amount)}',
             ]).toList(),
           ),
         ],
@@ -201,13 +206,13 @@ class MilkExportService {
       children: [
         pw.Text(
           label,
-          style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600),
+          style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey600),
         ),
         pw.SizedBox(height: 4),
         pw.Text(
           value,
           style: pw.TextStyle(
-            fontSize: 12,
+            fontSize: 10,
             fontWeight: pw.FontWeight.bold,
             color: PdfColor.fromInt(0xFF00522A),
           ),
@@ -247,6 +252,8 @@ class MilkExportService {
     sheet.appendRow([
       TextCellValue('Total Quantity (Kg)'),
       DoubleCellValue(summary.totalQuantity),
+      TextCellValue('Gross Revenue (PKR)'),
+      DoubleCellValue(summary.grossRevenue),
       TextCellValue('Morning (Kg)'),
       DoubleCellValue(summary.morningQuantity),
       TextCellValue('Evening (Kg)'),
@@ -262,6 +269,7 @@ class MilkExportService {
       TextCellValue('Morning (Kg)'),
       TextCellValue('Evening (Kg)'),
       TextCellValue('Total (Kg)'),
+      TextCellValue('Amount (PKR)'),
     ]);
 
     // Line items
@@ -271,6 +279,7 @@ class MilkExportService {
         DoubleCellValue(log.morningQty),
         DoubleCellValue(log.eveningQty),
         DoubleCellValue(log.totalQty),
+        DoubleCellValue(log.amount),
       ]);
     }
 
@@ -304,7 +313,7 @@ class MilkExportService {
     final canvas = ui.Canvas(recorder);
 
     const double width = 1080.0;
-    final double headerHeight = 300.0;
+    final double headerHeight = 320.0;
     final double rowHeight = 60.0;
     final double totalHeight = headerHeight + (logs.length * rowHeight) + 120.0;
 
@@ -315,7 +324,7 @@ class MilkExportService {
     // Header Card
     final cardPaint = ui.Paint()..color = const ui.Color(0xFF00522A);
     final cardRRect = ui.RRect.fromRectAndRadius(
-      const ui.Rect.fromLTWH(40, 40, width - 80, 220),
+      const ui.Rect.fromLTWH(40, 40, width - 80, 240),
       const ui.Radius.circular(24),
     );
     canvas.drawRRect(cardRRect, cardPaint);
@@ -333,28 +342,35 @@ class MilkExportService {
       canvas.drawParagraph(p, ui.Offset(x, y));
     }
 
-    drawText(farmName.toUpperCase(), 70, 70,
+    drawText(farmName.toUpperCase(), 70, 65,
         fontSize: 20, color: const ui.Color(0xFFA2D4B6), fontWeight: ui.FontWeight.bold);
-    drawText('Milk Export Report', 70, 105,
-        fontSize: 36, color: const ui.Color(0xFFFFFFFF), fontWeight: ui.FontWeight.bold);
+    drawText('Milk Export Report', 70, 95,
+        fontSize: 34, color: const ui.Color(0xFFFFFFFF), fontWeight: ui.FontWeight.bold);
     drawText(
       '${_dateFormat.format(startDate)} – ${_dateFormat.format(endDate)}',
       70,
-      160,
-      fontSize: 22,
+      145,
+      fontSize: 20,
       color: const ui.Color(0xFFE0E0E0),
     );
     drawText(
-      'Total: ${_numberFormat.format(summary.totalQuantity)} Kg   |   Daily Avg: ${_numberFormat.format(summary.dailyAvg)} Kg/day',
+      'Total Milk: ${_numberFormat.format(summary.totalQuantity)} Kg   |   Gross: PKR ${_numberFormat.format(summary.grossRevenue)}',
       70,
-      200,
+      180,
       fontSize: 22,
       color: const ui.Color(0xFFA2D4B6),
-      fontWeight: ui.FontWeight.w600,
+      fontWeight: ui.FontWeight.w700,
+    );
+    drawText(
+      'Morning: ${_numberFormat.format(summary.morningQuantity)} Kg   •   Evening: ${_numberFormat.format(summary.eveningQuantity)} Kg   •   Daily Avg: ${_numberFormat.format(summary.dailyAvg)} Kg/day',
+      70,
+      220,
+      fontSize: 18,
+      color: const ui.Color(0xFFE0E0E0),
     );
 
     // Table Header
-    double currentY = 300;
+    double currentY = 320;
     final thPaint = ui.Paint()..color = const ui.Color(0xFFE8ECE9);
     canvas.drawRRect(
       ui.RRect.fromRectAndRadius(
@@ -364,13 +380,15 @@ class MilkExportService {
       thPaint,
     );
     drawText('Date', 60, currentY + 12,
-        fontSize: 20, color: const ui.Color(0xFF00522A), fontWeight: ui.FontWeight.bold);
-    drawText('Morning (Kg)', 340, currentY + 12,
-        fontSize: 20, color: const ui.Color(0xFF00522A), fontWeight: ui.FontWeight.bold);
-    drawText('Evening (Kg)', 600, currentY + 12,
-        fontSize: 20, color: const ui.Color(0xFF00522A), fontWeight: ui.FontWeight.bold);
-    drawText('Total (Kg)', 850, currentY + 12,
-        fontSize: 20, color: const ui.Color(0xFF00522A), fontWeight: ui.FontWeight.bold);
+        fontSize: 19, color: const ui.Color(0xFF00522A), fontWeight: ui.FontWeight.bold);
+    drawText('Morning (Kg)', 270, currentY + 12,
+        fontSize: 19, color: const ui.Color(0xFF00522A), fontWeight: ui.FontWeight.bold);
+    drawText('Evening (Kg)', 470, currentY + 12,
+        fontSize: 19, color: const ui.Color(0xFF00522A), fontWeight: ui.FontWeight.bold);
+    drawText('Total (Kg)', 670, currentY + 12,
+        fontSize: 19, color: const ui.Color(0xFF00522A), fontWeight: ui.FontWeight.bold);
+    drawText('Amount (PKR)', 860, currentY + 12,
+        fontSize: 19, color: const ui.Color(0xFF00522A), fontWeight: ui.FontWeight.bold);
 
     currentY += 60;
     final rowLinePaint = ui.Paint()
@@ -379,13 +397,15 @@ class MilkExportService {
 
     for (final log in logs) {
       drawText(_dateFormat.format(log.date), 60, currentY + 14,
-          fontSize: 20, color: const ui.Color(0xFF1B2420), fontWeight: ui.FontWeight.w600);
-      drawText(_numberFormat.format(log.morningQty), 340, currentY + 14,
-          fontSize: 20, color: const ui.Color(0xFF4A5568));
-      drawText(_numberFormat.format(log.eveningQty), 600, currentY + 14,
-          fontSize: 20, color: const ui.Color(0xFF4A5568));
-      drawText(_numberFormat.format(log.totalQty), 850, currentY + 14,
-          fontSize: 22, color: const ui.Color(0xFF00522A), fontWeight: ui.FontWeight.bold);
+          fontSize: 18, color: const ui.Color(0xFF1B2420), fontWeight: ui.FontWeight.w600);
+      drawText(_numberFormat.format(log.morningQty), 270, currentY + 14,
+          fontSize: 18, color: const ui.Color(0xFF4A5568));
+      drawText(_numberFormat.format(log.eveningQty), 470, currentY + 14,
+          fontSize: 18, color: const ui.Color(0xFF4A5568));
+      drawText(_numberFormat.format(log.totalQty), 670, currentY + 14,
+          fontSize: 19, color: const ui.Color(0xFF00522A), fontWeight: ui.FontWeight.bold);
+      drawText('PKR ${_numberFormat.format(log.amount)}', 860, currentY + 14,
+          fontSize: 18, color: const ui.Color(0xFF00522A), fontWeight: ui.FontWeight.w700);
 
       canvas.drawLine(
         ui.Offset(40, currentY + rowHeight - 2),
@@ -398,7 +418,10 @@ class MilkExportService {
     final picture = recorder.endRecording();
     final img = await picture.toImage(width.toInt(), totalHeight.toInt());
     final byteData = await img.toByteData(format: ui.ImageByteFormat.png);
-    return byteData!.buffer.asUint8List();
+    if (byteData == null) {
+      throw StateError('Failed to encode image to PNG.');
+    }
+    return byteData.buffer.asUint8List();
   }
 
   /// Persists exported file to device application documents directory.
@@ -412,19 +435,33 @@ class MilkExportService {
     return file;
   }
 
+  /// Helper to deduce standard MIME types for shared files.
+  String getMimeType(String fileName) {
+    final lower = fileName.toLowerCase();
+    if (lower.endsWith('.png')) return 'image/png';
+    if (lower.endsWith('.pdf')) return 'application/pdf';
+    if (lower.endsWith('.xlsx')) {
+      return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+    }
+    return 'application/octet-stream';
+  }
+
   /// Shares exported document via native platform share dialog.
   Future<void> shareFile({
     required String fileName,
     required List<int> bytes,
     required String subject,
+    String? mimeType,
     ui.Rect? sharePositionOrigin,
   }) async {
     final Directory tempDir = await getTemporaryDirectory();
     final File file = File('${tempDir.path}/$fileName');
     await file.writeAsBytes(bytes, flush: true);
+
+    final resolvedMimeType = mimeType ?? getMimeType(fileName);
     await SharePlus.instance.share(
       ShareParams(
-        files: [XFile(file.path)],
+        files: [XFile(file.path, mimeType: resolvedMimeType)],
         subject: subject,
         text: subject,
         sharePositionOrigin: sharePositionOrigin,
