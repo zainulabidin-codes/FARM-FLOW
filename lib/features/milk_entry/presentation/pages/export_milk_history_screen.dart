@@ -310,8 +310,13 @@ class _ExportMilkHistoryScreenState extends State<ExportMilkHistoryScreen> {
       final fileName = _resolveFileName(customFileName);
       final File savedFile = await _exportService.saveFile(fileName: fileName, bytes: bytes);
       if (mounted) {
-        final displayName = savedFile.path.split(Platform.pathSeparator).last;
-        AppToast.showSuccess(context, 'Report saved: $displayName');
+        final displayName = savedFile.path.split(Platform.pathSeparator).last.split('/').last;
+        final isImage = fileName.toLowerCase().endsWith('.png');
+        if (isImage) {
+          AppToast.showSuccess(context, 'Image saved to Gallery: $displayName');
+        } else {
+          AppToast.showSuccess(context, 'Report saved: $displayName');
+        }
       }
     } catch (e) {
       if (mounted) {

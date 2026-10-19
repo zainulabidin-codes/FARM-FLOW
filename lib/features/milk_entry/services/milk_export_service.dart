@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -424,12 +425,56 @@ class MilkExportService {
     return byteData.buffer.asUint8List();
   }
 
-  /// Persists exported file to device application documents directory.
+  /// Persists exported file to device storage.
+  /// On Android:
+  /// - Images are saved to MediaStore Pictures/FarmFlow so they immediately appear in the Gallery.
+  /// - PDFs and Spreadsheets are saved to MediaStore Downloads/FarmFlow.
+  /// On desktop / other platforms, saves to Downloads or Documents directory.
   Future<File> saveFile({
     required String fileName,
     required List<int> bytes,
   }) async {
-    final Directory directory = await getApplicationDocumentsDirectory();
+    final lower = fileName.toLowerCase();
+    final mimeType = getMimeType(fileName);
+
+    if (Platform.isAndroid) {
+      const MethodChannel channel = MethodChannel('com.dairyfarm.app/media_saver');
+      try {
+        if (lower.endsWith('.png')) {
+          final String? savedPath = await channel.invokeMethod<String>(
+            'saveImageToGallery',
+            {
+              'bytes': Uint8List.fromList(bytes),
+              'fileName': fileName,
+            },
+          );
+          if (savedPath != null && savedPath.isNotEmpty) {
+            return File(savedPath);
+          }
+        } else {
+          final String? savedPath = await channel.invokeMethod<String>(
+            'saveFileToDownloads',
+            {
+              'bytes': Uint8List.fromList(bytes),
+              'fileName': fileName,
+              'mimeType': mimeType,
+            },
+          );
+          if (savedPath != null && savedPath.isNotEmpty) {
+            return File(savedPath);
+          }
+        }
+      } catch (_) {
+        // Fall back to path_provider if MethodChannel is not registered (e.g. in test env)
+      }
+    }
+
+    Directory? directory;
+    try {
+      directory = await getDownloadsDirectory();
+    } catch (_) {}
+    directory ??= await getApplicationDocumentsDirectory();
+
     final File file = File('${directory.path}/$fileName');
     await file.writeAsBytes(bytes, flush: true);
     return file;
