@@ -11,6 +11,8 @@ import 'package:dairy_farm_app/features/milk_entry/data/models/ledger_entry_mode
 import '../../features/dodi_ledger/presentation/providers/dodi_provider.dart';
 import '../../features/cows/presentation/providers/cow_provider.dart';
 import '../../features/dashboard/presentation/providers/activity_log_provider.dart';
+import '../../features/dashboard/presentation/providers/vet_check_provider.dart';
+import '../../features/dashboard/data/models/vet_check_models.dart';
 import '../utils/app_toast.dart';
 import 'package:dairy_farm_app/features/milk_entry/presentation/widgets/conflict_resolution_dialog.dart';
 import '../../features/dashboard/presentation/pages/schedule_vet_check_screen.dart';
@@ -298,18 +300,22 @@ abstract final class AppRouter {
   }
 
   /// Push the Schedule Vet Check Screen as a fullscreen modal.
-  static Future<void> pushScheduleVetCheck(
+  static Future<bool?> pushScheduleVetCheck(
     BuildContext context, {
-    required String cowName,
-    required String cowTag,
-    required String shed,
-    List<VetDoctor> doctors = const [],
-    List<String> presetReasons = const [],
+    int? userId,
+    int? cowId,
+    String? cowName,
+    String? cowTag,
+    String? shed,
+    List<VetDoctor>? doctors,
+    List<String>? presetReasons,
   }) {
-    return Navigator.of(context).push(
-      MaterialPageRoute(
+    return Navigator.of(context).push<bool>(
+      MaterialPageRoute<bool>(
         fullscreenDialog: true,
         builder: (_) => ScheduleVetCheckScreen(
+          userId: userId ?? Provider.of<AuthProvider>(context, listen: false).currentUser?.id,
+          cowId: cowId,
           cowName: cowName,
           cowTag: cowTag,
           shed: shed,
@@ -408,6 +414,7 @@ class _AuthEntryPageState extends State<_AuthEntryPage> {
               Provider.of<CowProvider>(context, listen: false).loadCows(userId),
               Provider.of<MilkEntryProvider>(context, listen: false).fetchTodaysTotalMilk(),
               Provider.of<ActivityLogProvider>(context, listen: false).loadActivities(userId),
+              Provider.of<VetCheckProvider>(context, listen: false).loadAll(userId),
             ]);
 
             if (!context.mounted) return;
@@ -436,6 +443,7 @@ class _AuthEntryPageState extends State<_AuthEntryPage> {
             Provider.of<CowProvider>(context, listen: false).loadCows(userId),
             Provider.of<MilkEntryProvider>(context, listen: false).fetchTodaysTotalMilk(),
             Provider.of<ActivityLogProvider>(context, listen: false).loadActivities(userId),
+            Provider.of<VetCheckProvider>(context, listen: false).loadAll(userId),
           ]);
           if (!context.mounted) return;
           AppRouter.goToShell(context, userId: userId);

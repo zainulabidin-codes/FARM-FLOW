@@ -123,6 +123,7 @@ class DashboardScreen extends StatefulWidget {
 
   /// Fired when the user taps the Scheduled Vet Check banner.
   final VoidCallback? onVetCheckBannerTap;
+  final String? vetCheckSubtitle;
 
   const DashboardScreen({
     super.key,
@@ -147,6 +148,7 @@ class DashboardScreen extends StatefulWidget {
     this.onRefresh,
     this.onMilkCardAction,
     this.onVetCheckBannerTap,
+    this.vetCheckSubtitle,
   });
 
   @override
@@ -258,6 +260,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: _ScheduledVetBanner(
                     onTap: widget.onVetCheckBannerTap,
+                    subtitle: widget.vetCheckSubtitle,
                   ),
                 ),
               ),
@@ -887,8 +890,9 @@ class _StatusPillRow extends StatelessWidget {
 // ---------------------------------------------------------------------------
 class _ScheduledVetBanner extends StatelessWidget {
   final VoidCallback? onTap;
+  final String? subtitle;
 
-  const _ScheduledVetBanner({this.onTap});
+  const _ScheduledVetBanner({this.onTap, this.subtitle});
 
   @override
   Widget build(BuildContext context) {
@@ -951,7 +955,7 @@ class _ScheduledVetBanner extends StatelessWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        'Cow #04 health visit at 2:00 PM',
+                        subtitle?.isNotEmpty == true ? subtitle! : 'No upcoming visits • Tap to schedule',
                         style: GoogleFonts.plusJakartaSans(
                           color: const Color(0xFF717973),
                           fontSize: 13,

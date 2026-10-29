@@ -29,15 +29,16 @@ import 'package:dairy_farm_app/features/dashboard/presentation/providers/dashboa
 // AppShell
 // ---------------------------------------------------------------------------
 // The main scaffold after login. Manages:
-//   • Which of the 3 persistent tabs is visible (Home / Buyers / Herd)
-//   • The cows filter selection state
-//   • All real data comes from providers — no hardcoded values remain.
+//   â€¢ Which of the 3 persistent tabs is visible (Home / Buyers / Herd)
+//   â€¢ The cows filter selection state
+//   â€¢ All real data comes from providers â€” no hardcoded values remain.
 //
-// Tab 1 (Milk) is NOT a persistent tab — it always pushes a fullscreen
+// Tab 1 (Milk) is NOT a persistent tab â€” it always pushes a fullscreen
 // modal via the [onMilkEntryTap] callback.
 // ---------------------------------------------------------------------------
 
 import 'package:dairy_farm_app/features/dashboard/presentation/providers/activity_log_provider.dart';
+import 'package:dairy_farm_app/features/dashboard/presentation/providers/vet_check_provider.dart';
 
 class AppShell extends StatefulWidget {
   /// The DB primary key of the currently logged-in farmer.
@@ -66,6 +67,9 @@ class AppShellState extends State<AppShell> with WidgetsBindingObserver {
     Future.microtask(() {
       if (!mounted) return;
       Provider.of<CowProvider>(context, listen: false).runStartupRollups();
+      try {
+        Provider.of<VetCheckProvider>(context, listen: false).loadAll(widget.userId);
+      } catch (_) {}
     });
   }
 
@@ -85,7 +89,7 @@ class AppShellState extends State<AppShell> with WidgetsBindingObserver {
     }
   }
 
-  // ── Navigation handler ────────────────────────────────────────────────────
+  // â”€â”€ Navigation handler â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   void _onNavTap(int index) async {
     if (index == 1) {
@@ -114,7 +118,7 @@ class AppShellState extends State<AppShell> with WidgetsBindingObserver {
     }
   }
 
-  // ── Dodi card tap → DodiDetailScreen ─────────────────────────────────────
+  // â”€â”€ Dodi card tap â†’ DodiDetailScreen â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   void _onDodiCardTap(String dodiIdStr) async {
     final dodiProvider = Provider.of<DodiProvider>(context, listen: false);
@@ -149,7 +153,7 @@ class AppShellState extends State<AppShell> with WidgetsBindingObserver {
     }
   }
 
-  // ── Cow card tap ─────────────────────────────────────────────────────────
+  // â”€â”€ Cow card tap â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   void _onCowCardTap(String cowIdStr) {
     AppRouter.pushPerCowMilk(context, cowIdStr: cowIdStr);
@@ -238,7 +242,7 @@ class AppShellState extends State<AppShell> with WidgetsBindingObserver {
                     if (success) {
                       AppToast.showSuccess(
                         context,
-                        '⚠️ Pregnancy ended for Cow #$cowName.',
+                        'âš ï¸ Pregnancy ended for Cow #$cowName.',
                       );
                     } else {
                       AppToast.showError(
@@ -333,7 +337,7 @@ class AppShellState extends State<AppShell> with WidgetsBindingObserver {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              'Currently: ${cow.confirmationMethod ?? "AUTO"} — Change method to Vet or Self.',
+                              'Currently: ${cow.confirmationMethod ?? "AUTO"} â€” Change method to Vet or Self.',
                               style: const TextStyle(
                                 color: AppColors.textDark,
                                 fontSize: 12,
@@ -409,7 +413,7 @@ class AppShellState extends State<AppShell> with WidgetsBindingObserver {
                     if (success) {
                       AppToast.showSuccess(
                         context,
-                        '🔄 Heat repeated logged for Cow #$cowName.',
+                        'ðŸ”„ Heat repeated logged for Cow #$cowName.',
                       );
                     } else {
                       AppToast.showError(
@@ -575,7 +579,7 @@ class AppShellState extends State<AppShell> with WidgetsBindingObserver {
                     ),
                   ),
                   Text(
-                    'Confirmation Action — Cow #$cowName',
+                    'Confirmation Action â€” Cow #$cowName',
                     style: const TextStyle(
                       fontSize: 20,
                       height: 1.3,
@@ -739,7 +743,7 @@ class AppShellState extends State<AppShell> with WidgetsBindingObserver {
                             if (ctx.mounted) {
                               Navigator.of(ctx).pop();
                               if (success) {
-                                AppToast.showSuccess(ctx, '✅ Pregnancy confirmed ($selectedMethod) for Cow #$cowName.');
+                                AppToast.showSuccess(ctx, 'âœ… Pregnancy confirmed ($selectedMethod) for Cow #$cowName.');
                               } else {
                                 AppToast.showError(ctx, cowProvider.errorMessage ?? 'Failed to confirm pregnancy.');
                               }
@@ -790,7 +794,7 @@ class AppShellState extends State<AppShell> with WidgetsBindingObserver {
     );
   }
 
-  // ── Add Dodi modal ────────────────────────────────────────────────────────
+  // â”€â”€ Add Dodi modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   void _onAddBuyerTap() async {
     await showModalBottomSheet<void>(
@@ -807,7 +811,7 @@ class AppShellState extends State<AppShell> with WidgetsBindingObserver {
     }
   }
 
-  // ── Add Cow modal ─────────────────────────────────────────────────────────
+  // â”€â”€ Add Cow modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   void openAddCowSheet() => _onAddCowTap();
 
@@ -826,7 +830,7 @@ class AppShellState extends State<AppShell> with WidgetsBindingObserver {
     }
   }
 
-  // ── Build ─────────────────────────────────────────────────────────────────
+  // â”€â”€ Build â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   String _formatActivityTime(int timeUnix) {
     final dt = DateTime.fromMillisecondsSinceEpoch(timeUnix);
@@ -852,6 +856,10 @@ class AppShellState extends State<AppShell> with WidgetsBindingObserver {
         'Farmer';
 
     final activityProvider = Provider.of<ActivityLogProvider>(context);
+    VetCheckProvider? vetProvider;
+    try {
+      vetProvider = Provider.of<VetCheckProvider>(context);
+    } catch (_) {}
 
     // Take the 3 most recent activities from the global activity log
     final recentLogItems = activityProvider.activities.take(3).toList();
@@ -949,12 +957,26 @@ class AppShellState extends State<AppShell> with WidgetsBindingObserver {
           context,
         ).push(MaterialPageRoute(builder: (_) => const ActivityLogScreen())),
         onNavTap: _onNavTap,
-        onVetCheckBannerTap: () => AppRouter.pushScheduleVetCheck(
-          context,
-          cowName: 'Unknown Cow',
-          cowTag: '---',
-          shed: '---',
-        ),
+        vetCheckSubtitle: vetProvider?.upcomingAppointment != null
+            ? 'Cow #${vetProvider!.upcomingAppointment!.cowTag ?? vetProvider.upcomingAppointment!.cowId} visit on ${vetProvider.upcomingAppointment!.scheduledDate} at ${vetProvider.upcomingAppointment!.scheduledTime}'
+            : null,
+        onVetCheckBannerTap: () {
+          final upcoming = vetProvider?.upcomingAppointment;
+          if (upcoming != null) {
+            AppRouter.pushScheduleVetCheck(
+              context,
+              userId: widget.userId,
+              cowId: upcoming.cowId,
+              cowTag: upcoming.cowTag,
+              cowName: upcoming.cowName,
+            );
+          } else {
+            AppRouter.pushScheduleVetCheck(
+              context,
+              userId: widget.userId,
+            );
+          }
+        },
         onMilkCardAction: (action) async {
           if (action == MilkCardActionType.viewHistory) {
             AppRouter.pushMilkHistory(context, farmName: farmName, userId: widget.userId);
@@ -983,7 +1005,7 @@ class AppShellState extends State<AppShell> with WidgetsBindingObserver {
 }
 
 // ---------------------------------------------------------------------------
-// _AddDodiSheet — bottom modal form for creating a new Dodi
+// _AddDodiSheet â€” bottom modal form for creating a new Dodi
 // ---------------------------------------------------------------------------
 class _AddDodiSheet extends StatefulWidget {
   final int userId;
@@ -1063,7 +1085,7 @@ class _AddDodiSheetState extends State<_AddDodiSheet> {
 
     if (success) {
       Navigator.of(context).pop();
-      AppToast.showSuccess(context, '✅ $name added as a buyer.');
+      AppToast.showSuccess(context, 'âœ… $name added as a buyer.');
     } else {
       final err = Provider.of<DodiProvider>(
         context,
@@ -1214,7 +1236,7 @@ class _AddDodiSheetState extends State<_AddDodiSheet> {
 }
 
 // ---------------------------------------------------------------------------
-// _AddCowSheet — bottom modal form for adding a new cow
+// _AddCowSheet â€” bottom modal form for adding a new cow
 // ---------------------------------------------------------------------------
 class _AddCowSheet extends StatefulWidget {
   final int userId;
@@ -1308,11 +1330,11 @@ class _AddCowSheetState extends State<_AddCowSheet> {
       finalMatingDate = null;
     }
 
-    // ── Observation-window guard ──────────────────────────────────────────
+    // â”€â”€ Observation-window guard â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     // When a pregnant/bred-heifer cow is added with a recent mating date
-    // (≤28 days) and the pregnancy is NOT yet confirmed (i.e. DATE mode,
+    // (â‰¤28 days) and the pregnancy is NOT yet confirmed (i.e. DATE mode,
     // not AGE mode), route her through the same observation window that
-    // recordMating() uses — status becomes PENDING_CONFIRMATION.
+    // recordMating() uses â€” status becomes PENDING_CONFIRMATION.
     String effectiveStatus = _selectedStatus;
     if (isPregnantOrDry &&
         _selectedStatus != 'DRY' &&
@@ -1507,7 +1529,7 @@ class _AddCowSheetState extends State<_AddCowSheet> {
                                 : null,
                           ),
                           child: Text(
-                            'Yes — Given Birth\n(Adult)',
+                            'Yes \u2014 Given Birth\n(Adult)',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               color: _hasLactatedBefore == 1
@@ -1557,7 +1579,7 @@ class _AddCowSheetState extends State<_AddCowSheet> {
                                 : null,
                           ),
                           child: Text(
-                            'No — Never Calved\n(Heifer)',
+                            'No \u2014 Never Calved\n(Heifer)',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               color: _hasLactatedBefore == 0

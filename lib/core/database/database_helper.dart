@@ -18,7 +18,7 @@ class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._internal();
 
   static const String _databaseName = 'dairy_farm.db';
-  static const int _databaseVersion = 13;
+  static const int _databaseVersion = 14;
 
   Database? _database;
 
@@ -219,6 +219,43 @@ class DatabaseHelper {
       await db.execute('ALTER TABLE cows ADD COLUMN confirmation_date TEXT');
       await db.execute('ALTER TABLE cows ADD COLUMN confirmation_method TEXT');
     }
+    if (oldVersion < 14) {
+      await db.execute('''
+        CREATE TABLE vet_doctors (
+          id            INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id       INTEGER NOT NULL,
+          name          TEXT    NOT NULL,
+          qualification TEXT,
+          phone         TEXT    NOT NULL,
+          is_primary    INTEGER NOT NULL DEFAULT 0,
+          created_at    TEXT    NOT NULL,
+          FOREIGN KEY (user_id) REFERENCES users(id)
+        )
+      ''');
+      await db.execute('''
+        CREATE TABLE vet_appointments (
+          id              INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id         INTEGER NOT NULL,
+          cow_id          INTEGER NOT NULL,
+          doctor_id       INTEGER NOT NULL,
+          scheduled_date  TEXT    NOT NULL,
+          scheduled_time  TEXT    NOT NULL,
+          reasons         TEXT    NOT NULL,
+          custom_notes    TEXT,
+          feedback_notes  TEXT,
+          has_follow_up   INTEGER NOT NULL DEFAULT 0,
+          follow_up_date  TEXT,
+          status          TEXT    NOT NULL DEFAULT 'SCHEDULED',
+          created_at      TEXT    NOT NULL,
+          FOREIGN KEY (user_id) REFERENCES users(id),
+          FOREIGN KEY (cow_id) REFERENCES cows(id) ON DELETE CASCADE,
+          FOREIGN KEY (doctor_id) REFERENCES vet_doctors(id) ON DELETE CASCADE
+        )
+      ''');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_vet_doctors_user_id ON vet_doctors(user_id)');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_vet_appointments_user_id ON vet_appointments(user_id)');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_vet_appointments_cow_id ON vet_appointments(cow_id)');
+    }
   }
 
   /// Creates all tables on first run.
@@ -358,6 +395,42 @@ class DatabaseHelper {
       )
     ''');
 
+    // ── Vet Doctors ────────────────────────────────────────────────────────
+    await db.execute('''
+      CREATE TABLE vet_doctors (
+        id            INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id       INTEGER NOT NULL,
+        name          TEXT    NOT NULL,
+        qualification TEXT,
+        phone         TEXT    NOT NULL,
+        is_primary    INTEGER NOT NULL DEFAULT 0,
+        created_at    TEXT    NOT NULL,
+        FOREIGN KEY (user_id) REFERENCES users(id)
+      )
+    ''');
+
+    // ── Vet Appointments ───────────────────────────────────────────────────
+    await db.execute('''
+      CREATE TABLE vet_appointments (
+        id              INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id         INTEGER NOT NULL,
+        cow_id          INTEGER NOT NULL,
+        doctor_id       INTEGER NOT NULL,
+        scheduled_date  TEXT    NOT NULL,
+        scheduled_time  TEXT    NOT NULL,
+        reasons         TEXT    NOT NULL,
+        custom_notes    TEXT,
+        feedback_notes  TEXT,
+        has_follow_up   INTEGER NOT NULL DEFAULT 0,
+        follow_up_date  TEXT,
+        status          TEXT    NOT NULL DEFAULT 'SCHEDULED',
+        created_at      TEXT    NOT NULL,
+        FOREIGN KEY (user_id) REFERENCES users(id),
+        FOREIGN KEY (cow_id) REFERENCES cows(id) ON DELETE CASCADE,
+        FOREIGN KEY (doctor_id) REFERENCES vet_doctors(id) ON DELETE CASCADE
+      )
+    ''');
+
     // ── Indexes on all foreign-key columns (fresh installs) ───────────────
     await db.execute('CREATE INDEX IF NOT EXISTS idx_ledger_dodi_id ON ledger(dodi_id)');
     await db.execute('CREATE INDEX IF NOT EXISTS idx_cow_milk_sessions_cow_id ON cow_milk_sessions(cow_id)');
@@ -369,5 +442,8 @@ class DatabaseHelper {
     await db.execute('CREATE INDEX IF NOT EXISTS idx_cow_milk_monthly_summary_cow_id ON cow_milk_monthly_summary(cow_id)');
     await db.execute('CREATE INDEX IF NOT EXISTS idx_cow_milk_monthly_summary_season_id ON cow_milk_monthly_summary(season_id)');
     await db.execute('CREATE UNIQUE INDEX IF NOT EXISTS idx_cows_active_tag ON cows(user_id, LOWER(tag_number)) WHERE is_deleted = 0');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_vet_doctors_user_id ON vet_doctors(user_id)');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_vet_appointments_user_id ON vet_appointments(user_id)');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_vet_appointments_cow_id ON vet_appointments(cow_id)');
   }
 }

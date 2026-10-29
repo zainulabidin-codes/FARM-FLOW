@@ -14,6 +14,7 @@ import 'features/cows/data/repositories/cow_repository.dart';
 import 'features/cows/presentation/providers/cow_provider.dart';
 import 'features/dashboard/domain/connectors/milk_card_actions_connector.dart';
 import 'features/dashboard/presentation/providers/activity_log_provider.dart';
+import 'features/dashboard/presentation/providers/vet_check_provider.dart';
 import 'features/cows/presentation/pages/cow_milk_screen.dart';
 import 'features/dodi_ledger/data/repositories/dodi_repository.dart';
 import 'features/dodi_ledger/presentation/providers/dodi_provider.dart';
@@ -25,7 +26,6 @@ Future<void> main() async {
 
   // Initialise SQLite FFI for Windows / Linux / macOS desktop.
   DatabaseHelper.initForPlatform();
-
 
   // Lock to portrait — dairy farm field use is always one-handed portrait.
   SystemChrome.setPreferredOrientations([
@@ -56,40 +56,46 @@ class DairyFarmApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
-              providers: [
-          // Auth must be first
-          ChangeNotifierProvider<AuthProvider>(
-            create: (_) => AuthProvider(repository: AuthRepository()),
-          ),
+      providers: [
+        // Auth must be first
+        ChangeNotifierProvider<AuthProvider>(
+          create: (_) => AuthProvider(repository: AuthRepository()),
+        ),
 
-          // Activity Log must be second so others can proxy it
-          ChangeNotifierProvider<ActivityLogProvider>(
-            create: (_) => ActivityLogProvider(),
-          ),
+        // Activity Log must be second so others can proxy it
+        ChangeNotifierProvider<ActivityLogProvider>(
+          create: (_) => ActivityLogProvider(),
+        ),
 
-          // Dodi / Ledger
-          ChangeNotifierProxyProvider<ActivityLogProvider, DodiProvider>(
-            create: (_) => DodiProvider(repository: DodiRepository()),
-            update: (_, activityProvider, previous) => previous!..setActivityProvider(activityProvider),
-          ),
+        // Dodi / Ledger
+        ChangeNotifierProxyProvider<ActivityLogProvider, DodiProvider>(
+          create: (_) => DodiProvider(repository: DodiRepository()),
+          update: (_, activityProvider, previous) => previous!..setActivityProvider(activityProvider),
+        ),
 
-          // Cows & Breeding
-          ChangeNotifierProxyProvider<ActivityLogProvider, CowProvider>(
-            create: (_) => CowProvider(repository: CowRepository()),
-            update: (_, activityProvider, previous) => previous!..setActivityProvider(activityProvider),
-          ),
+        // Cows & Breeding
+        ChangeNotifierProxyProvider<ActivityLogProvider, CowProvider>(
+          create: (_) => CowProvider(repository: CowRepository()),
+          update: (_, activityProvider, previous) => previous!..setActivityProvider(activityProvider),
+        ),
 
-          // Milk Entry
-          ChangeNotifierProxyProvider<ActivityLogProvider, MilkEntryProvider>(
-            create: (_) => MilkEntryProvider(repository: MilkEntryRepository()),
-            update: (_, activityProvider, previous) => previous!..setActivityProvider(activityProvider),
-          ),
+        // Milk Entry
+        ChangeNotifierProxyProvider<ActivityLogProvider, MilkEntryProvider>(
+          create: (_) => MilkEntryProvider(repository: MilkEntryRepository()),
+          update: (_, activityProvider, previous) => previous!..setActivityProvider(activityProvider),
+        ),
 
-          // Phase 2 Connector A: Milk Card Actions Connector
-          Provider<MilkCardActionsConnector>(
-            create: (_) => const DefaultMilkCardActionsConnector(),
-          ),
-        ],
+        // Vet Check
+        ChangeNotifierProxyProvider<ActivityLogProvider, VetCheckProvider>(
+          create: (_) => VetCheckProvider(),
+          update: (_, activityProvider, previous) => previous!..setActivityProvider(activityProvider),
+        ),
+
+        // Phase 2 Connector A: Milk Card Actions Connector
+        Provider<MilkCardActionsConnector>(
+          create: (_) => const DefaultMilkCardActionsConnector(),
+        ),
+      ],
       child: MaterialApp(
         title: 'Farm Flow',
         debugShowCheckedModeBanner: false,
@@ -111,7 +117,6 @@ class DairyFarmApp extends StatelessWidget {
     );
   }
 }
-
 
 /// Stateful entry point that wires [AuthProvider] to [AuthScreen].
 ///
@@ -149,6 +154,7 @@ class _AuthEntryState extends State<_AuthEntry> {
               Provider.of<CowProvider>(context, listen: false).loadCows(userId),
               Provider.of<MilkEntryProvider>(context, listen: false).fetchTodaysTotalMilk(),
               Provider.of<ActivityLogProvider>(context, listen: false).loadActivities(userId),
+              Provider.of<VetCheckProvider>(context, listen: false).loadAll(userId),
             ]);
 
             if (!context.mounted) return;
@@ -177,13 +183,14 @@ class _AuthEntryState extends State<_AuthEntry> {
           final userId = authProvider.currentUser!.id!;
 
           // Pre-load all data concurrently — parallel Future.wait instead of
-          // 4 sequential awaits.
+          // sequential awaits.
           if (!context.mounted) return;
           await Future.wait([
             Provider.of<DodiProvider>(context, listen: false).loadDodis(userId),
             Provider.of<CowProvider>(context, listen: false).loadCows(userId),
             Provider.of<MilkEntryProvider>(context, listen: false).fetchTodaysTotalMilk(),
             Provider.of<ActivityLogProvider>(context, listen: false).loadActivities(userId),
+            Provider.of<VetCheckProvider>(context, listen: false).loadAll(userId),
           ]);
 
           if (!context.mounted) return;

@@ -653,4 +653,35 @@ class ActivityLogProvider extends ChangeNotifier {
       ),
     );
   }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // Vet Check Domain Loggers
+  // ══════════════════════════════════════════════════════════════════════════
+
+  /// Logs a vet check appointment being scheduled.
+  Future<void> logVetAppointmentScheduled({
+    required int userId,
+    required String cowTag,
+    required String doctorName,
+    required String scheduledDate,
+    required String scheduledTime,
+  }) async {
+    await _logActivity(
+      ActivityLogModel(
+        userId: userId,
+        title: 'Vet Check Scheduled',
+        subtitle: 'Cow #$cowTag with $doctorName',
+        value: '$scheduledDate at $scheduledTime',
+        timeUnix: DateTime.now().millisecondsSinceEpoch,
+        iconCode: Icons.medical_services_rounded.codePoint,
+        isPositive: 1,
+        metadata: {
+          'cowTag': cowTag,
+          'doctorName': doctorName,
+          'scheduledDate': scheduledDate,
+          'scheduledTime': scheduledTime,
+        },
+      ),
+    );
+  }
 }
